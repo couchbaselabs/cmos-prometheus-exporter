@@ -1,0 +1,50 @@
+{
+  "memcached": {
+    "kv_vb_checkpoint_memory_bytes": {
+      "group": "",
+      "pattern": "^vb_(?P<state>.+?)_checkpoint_memory$",
+      "labels": ["bucket", "state"]
+    },
+    "kv_vb_checkpoint_memory_overhead_bytes": {
+      "group": "",
+      "pattern": "^vb_(?P<state>.+?)_checkpoint_memory_overhead$",
+      "labels": ["bucket", "state"]
+    },
+    "kv_vb_checkpoint_memory_unreferenced_bytes": {
+      "group": "",
+      "pattern": "^vb_(?P<state>.+?)_checkpoint_memory_unreferenced$",
+      "labels": ["bucket", "state"]
+    },
+    "kv_vb_itm_memory_bytes": {
+      "group": "",
+      "pattern": "^vb_(?P<state>.+?)_itm_memory$",
+      "labels": ["bucket", "state"]
+    },
+    "kv_num_vbuckets": {
+      "group": "",
+      "pattern": "^vb_(?P<state>.+?)_num$",
+      "labels": ["bucket", "state"]
+    },
+    "kv_curr_items": {
+      "group" : "",
+      "pattern": "^curr_items$",
+      "labels": ["bucket"]
+    },
+    "kv_uptime_seconds": {
+      "group" : "",
+      "pattern": "^uptime$",
+      "labels": []
+    }
+  },
+  "gsi": {
+    "index_raw_data_size": {
+      "name": "data_size"
+    },
+    "index_items_count": {
+      "name": "items_count"
+    },
+    "index_total_scan_duration": {
+      "name": "total_scan_duration"
+    }
+  }
+}
