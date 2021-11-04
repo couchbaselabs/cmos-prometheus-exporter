@@ -1,45 +1,136 @@
 package memcached
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/couchbase/gomemcached"
 	memcached "github.com/couchbase/gomemcached/client"
 	"github.com/couchbase/tools-common/cbrest"
 	"github.com/markspolakovs/yacpe/pkg/couchbase"
 	"github.com/prometheus/client_golang/prometheus"
-	"log"
 	"net"
-	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 )
 
 type MetricConfig struct {
-	Group string `json:"group"`
-	Pattern string `json:"pattern"`
-	Labels []string `json:"labels"`
+	Group   string   `json:"group"`
+	Pattern string   `json:"pattern"`
+	Labels  []string `json:"labels"`
+	Help    string   `json:"help,omitempty"`
 }
 
 type MetricSet map[string]MetricConfig
 
-
-type metricInternal struct {
-	exp *regexp.Regexp
+type internalStat struct {
+	exp    *regexp.Regexp
 	labels []string
-	gauge *prometheus.GaugeVec
+	desc   *prometheus.Desc
 }
 
 // Map of groups to metric names to metrics. IOW, stats[memcachedGroupName][prometheusMetricName]
-type internalStatsMap map[string]map[string]*metricInternal
+type internalStatsMap map[string]map[string]*internalStat
 
 type Metrics struct {
-	node *couchbase.Node
-	hostPort string
-	stats internalStatsMap
-	mc  *memcached.Client
-	ms  MetricSet
-	mux sync.Mutex
+	FakeCollections bool
+	node            *couchbase.Node
+	hostPort        string
+	stats           internalStatsMap
+	mc              *memcached.Client
+	ms              MetricSet
+	mux             sync.Mutex
+}
+
+func (m *Metrics) Describe(descs chan<- *prometheus.Desc) {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+	for _, group := range m.stats {
+		for _, stat := range group {
+			descs <- stat.desc
+		}
+	}
+	// close(descs)
+}
+
+func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+	// gomemcached doesn't have a ListBuckets method (neither does gocbcore for that matter)
+	res, err := m.mc.Send(&gomemcached.MCRequest{
+		Opcode: 0x87, // https://github.com/couchbase/kv_engine/blob/bb8b64eb180b01b566e2fbf54b969e6d20b2a873/docs/BinaryProtocol.md#0x87-list-buckets
+		Opaque: 0xefbeadde,
+	})
+	if err != nil {
+		panic(err)
+	}
+	buckets := strings.Split(string(res.Body), " ")
+	fmt.Printf("Buckets: %#v\n", buckets)
+	if len(buckets) == 1 && buckets[0] == "" {
+		buckets = nil
+	}
+	for _, bucket := range buckets {
+		_, err = m.mc.SelectBucket(bucket)
+		if err != nil {
+			panic(err)
+		}
+		for group := range m.stats {
+			allStats, err := m.mc.StatsMap(group)
+			if err != nil {
+				panic(fmt.Errorf("while executing memcached stats for %v: %w", group, err))
+			}
+			results, err := m.processStatGroup(bucket, group, allStats)
+			if err != nil {
+				panic(fmt.Errorf("while processing group %v: %w", group, err))
+			}
+			for _, metric := range results {
+				fmt.Printf("Memcached sending %s\n", metric.Desc().String())
+				metrics <- metric
+			}
+		}
+	}
+	// close(metrics)
+	fmt.Println("memcached done")
+}
+
+func (m *Metrics) processStatGroup(bucket string, groupName string, vals map[string]string) ([]prometheus.Metric,
+	error) {
+	result := make([]prometheus.Metric, 0, len(m.stats[groupName]))
+	for _, stat := range m.stats[groupName] {
+		for key, valStr := range vals {
+			if match := stat.exp.FindStringSubmatch(key); match != nil {
+				val, err := strconv.ParseFloat(valStr, 64)
+				if err != nil {
+					return nil, fmt.Errorf("failed to parseFloat for stat %s (val %v): %w", key, val, err)
+				}
+				labelValues := make([]string, len(stat.labels))
+				for i, label := range stat.labels {
+					// Check well-known metric names
+					switch label {
+					case "bucket":
+						labelValues[i] = bucket
+					case "scope":
+						fallthrough
+					case "collection":
+						if m.FakeCollections {
+							labelValues[i] = "_default"
+						} else {
+							labelValues[i] = match[stat.exp.SubexpIndex(label)]
+						}
+					default:
+						labelValues[i] = match[stat.exp.SubexpIndex(label)]
+					}
+				}
+				result = append(result, prometheus.MustNewConstMetric(
+					stat.desc,
+					prometheus.GaugeValue,
+					val,
+					labelValues...,
+				))
+			}
+		}
+	}
+	return result, nil
 }
 
 func (m *Metrics) Close() error {
@@ -61,8 +152,8 @@ func NewMemcachedMetrics(node *couchbase.Node, metricSet MetricSet) (*Metrics, e
 		return nil, err
 	}
 	ret := &Metrics{
-		node: node,
-		mc:    mc,
+		node:     node,
+		mc:       mc,
 		hostPort: hostPort,
 	}
 	if err = ret.updateMetricSet(metricSet); err != nil {
@@ -81,18 +172,19 @@ func (m *Metrics) updateMetricSet(ms MetricSet) error {
 	alive := make(map[string]map[string]bool)
 	for metric, val := range ms {
 		if _, ok := existing[val.Group]; !ok {
-			existing[val.Group] = make(map[string]*metricInternal)
+			existing[val.Group] = make(map[string]*internalStat)
 		}
 		exp, err := regexp.Compile(val.Pattern)
-		if err != nil {return err}
+		if err != nil {
+			return err
+		}
 		result, found := existing[val.Group][metric]
 		if !found {
-			result = &metricInternal{
-				gauge:  prometheus.NewGaugeVec(prometheus.GaugeOpts{
-					Name:        metric,
-				}, val.Labels),
+			result = &internalStat{
+				exp:    exp,
+				labels: val.Labels,
+				desc:   prometheus.NewDesc(metric, val.Help, val.Labels, nil),
 			}
-			prometheus.MustRegister(result.gauge)
 		}
 		result.exp = exp
 		result.labels = val.Labels
@@ -104,10 +196,8 @@ func (m *Metrics) updateMetricSet(ms MetricSet) error {
 	}
 
 	for group, metrics := range existing {
-		for metric, val := range metrics {
+		for metric := range metrics {
 			if _, ok := alive[group][metric]; !ok {
-				// dead, remove it
-				prometheus.Unregister(val.gauge)
 				delete(existing[group], metric)
 			}
 		}
@@ -116,117 +206,4 @@ func (m *Metrics) updateMetricSet(ms MetricSet) error {
 	m.ms = ms
 	m.stats = existing
 	return nil
-}
-
-func (m *Metrics) processStatGroup(bucket string, groupName string, vals map[string]string) error {
-	for _, stat := range m.stats[groupName] {
-		for key, valStr := range vals {
-			if match := stat.exp.FindStringSubmatch(key); match != nil {
-				val, err := strconv.ParseFloat(valStr, 64)
-				if err != nil {
-					return fmt.Errorf("failed to parseFloat for stat %s (val %v): %w", key, val, err)
-				}
-				labelValues := make([]string, len(stat.labels))
-				for i, label := range stat.labels {
-					// Check well-known metric names
-					switch label {
-					case "bucket":
-						labelValues[i] = bucket
-					default:
-						labelValues[i] = match[stat.exp.SubexpIndex(label)]
-					}
-				}
-				stat.gauge.WithLabelValues(labelValues...).Set(val)
-			}
-		}
-	}
-	return nil
-}
-
-func (m *Metrics) Collect() error {
-	m.mux.Lock()
-	defer m.mux.Unlock()
-	res, err := m.node.RestClient().Execute(&cbrest.Request{
-		Method:   http.MethodGet,
-		Endpoint: cbrest.EndpointBuckets,
-		Service:  cbrest.ServiceManagement,
-		ExpectedStatusCode: http.StatusOK,
-	})
-	if err != nil {
-		return err
-	}
-	type bucketsInfo []struct{
-		Name string `json:"name"`
-		VBucketServerMap       struct {
-			ServerList    []string `json:"serverList"`
-		} `json:"vBucketServerMap"`
-	}
-	var buckets bucketsInfo
-	if err = json.Unmarshal(res.Body, &buckets); err != nil {
-		return err
-	}
-	ourIP := net.ParseIP(m.node.Hostname)
-	// Special case
-	if ourIP == nil && m.node.Hostname == "localhost" {
-		ourIP = net.ParseIP("127.0.0.1")
-	}
-	for _, bucket := range buckets {
-		var weHaveIt bool
-		for _, hostPort := range bucket.VBucketServerMap.ServerList {
-			weHaveIt = sameHost(hostPort, m.hostPort)
-			if weHaveIt {
-				break
-			}
-		}
-		if weHaveIt {
-			_, err := m.mc.SelectBucket(bucket.Name)
-			if err != nil {
-				return err
-			}
-			for group := range m.stats {
-				allStats, err := m.mc.StatsMap(group)
-				if err != nil {
-					return fmt.Errorf("while executing memcached stats for %v: %w", group, err)
-				}
-				if err := m.processStatGroup(bucket.Name, group, allStats); err != nil {
-					return fmt.Errorf("while processing group %v: %w", group, err)
-				}
-			}
-		}
-	}
-	return nil
-}
-
-const localhostIP = "127.0.0.1"
-
-func sameHost(theirHostPort string, ourHostPort string) bool {
-	theirHost, theirPort, err := net.SplitHostPort(theirHostPort)
-	if err != nil {
-		log.Printf("The REST API gave us a duff theirHostPort %s: %v", theirHostPort, err)
-		return false
-	}
-	ourHost, ourPort, err := net.SplitHostPort(ourHostPort)
-	if err != nil {
-		panic(fmt.Errorf("our hostPort is duff (%s): %w", ourHostPort, err))
-	}
-	if theirHost == ourHost && theirPort == ourPort {
-		return true
-	}
-	theirIP := net.ParseIP(theirHost)
-	if theirIP == nil && theirHost == "localhost" {
-		theirIP = net.ParseIP(localhostIP)
-	}
-	ourIP := net.ParseIP(ourHost)
-	if ourIP == nil && ourHost == "localhost" {
-		ourIP = net.ParseIP(localhostIP)
-	}
-	if theirIP != nil && ourIP != nil {
-		if ourIP.Equal(theirIP) {
-			return theirPort == ourPort
-		}
-		if ourIP.IsLoopback() && theirIP.IsLoopback() {
-			return theirPort == ourPort
-		}
-	}
-	return false
 }

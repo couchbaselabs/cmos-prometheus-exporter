@@ -7,10 +7,10 @@ import (
 	"github.com/markspolakovs/yacpe/pkg/metrics"
 	gsi "github.com/markspolakovs/yacpe/pkg/metrics/gsi"
 	"github.com/markspolakovs/yacpe/pkg/metrics/memcached"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"net/http"
-	"time"
 )
 
 func main() {
@@ -25,7 +25,7 @@ func main() {
 	}
 
 	ms := metrics.LoadDefaultMetricSet()
-	collectors := make([]metrics.Collector, 0)
+	reg := prometheus.NewPedanticRegistry()
 
 	hasKV, err := node.HasService(cbrest.ServiceData)
 	if err != nil {
@@ -37,7 +37,7 @@ func main() {
 			log.Fatal(err)
 		}
 		defer mc.Close()
-		collectors = append(collectors, mc)
+		reg.MustRegister(mc)
 	}
 
 	hasGSI, err := node.HasService(cbrest.ServiceGSI)
@@ -49,20 +49,10 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		collectors = append(collectors, gsiCollector)
+		reg.MustRegister(gsiCollector)
 	}
 
-	go func() {
-		for range time.Tick(5 * time.Second) {
-			for _, col := range collectors {
-				if err := col.Collect(); err != nil {
-					log.Fatal(err)
-				}
-			}
-		}
-	}()
-
-	http.Handle("/metrics", promhttp.Handler())
+	http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 	log.Printf("listening on %s", cfg.Bind)
 	log.Fatal(http.ListenAndServe(cfg.Bind, nil))
 }

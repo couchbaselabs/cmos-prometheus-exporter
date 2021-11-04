@@ -14,32 +14,107 @@ import (
 )
 
 type Metric struct {
-	Name string `json:"name"`
-	Global bool `json:"global"`
+	Name   string `json:"name"`
+	Global bool   `json:"global"`
 }
 
 type MetricSet map[string]Metric
 
 type metricInternal struct {
 	gsiName string
-	global bool
-	gauge *prometheus.GaugeVec
+	global  bool
+	desc    *prometheus.Desc
 }
 
 type metricSetInternal map[string]*metricInternal
 
 type Metrics struct {
 	node *couchbase.Node
-	msi metricSetInternal
-	mux sync.Mutex
-	cfg *config.Config
+	msi  metricSetInternal
+	mux  sync.Mutex
+	cfg  *config.Config
+}
+
+func (m *Metrics) Describe(descs chan<- *prometheus.Desc) {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+	for _, metric := range m.msi {
+		descs <- metric.desc
+	}
+	// close(descs)
+}
+
+func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
+	res, err := m.node.RestClient().Do(context.TODO(), &cbrest.Request{
+		Method:   "GET",
+		Endpoint: "/api/v1/stats",
+		Service:  cbrest.ServiceGSI,
+	})
+	if err != nil {
+		panic(err)
+	}
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		panic(err)
+	}
+	type gsiStatsResult map[string]map[string]interface{}
+	var statsResult gsiStatsResult
+	if err = json.Unmarshal(body, &statsResult); err != nil {
+		panic(err)
+	}
+	const statsKeyGlobal = "indexer"
+	ch, err := m.getMetricsFor(statsResult[statsKeyGlobal], nil, true)
+	if err != nil {
+		panic(fmt.Errorf("while updating global GSI metrics: %w", err))
+	}
+	for _, metric := range ch {
+		fmt.Printf("GSI sending global %s\n", metric.Desc().String())
+		metrics <- metric
+	}
+	for key, vals := range statsResult {
+		if key == statsKeyGlobal {
+			continue
+		}
+		var labels prometheus.Labels
+		parts := strings.Split(key, ":")
+		if len(parts) == 2 {
+			labels = prometheus.Labels{
+				"bucket": parts[0],
+				"index":  parts[1],
+			}
+			if m.cfg.FakeCollections {
+				labels["scope"] = "_default"
+				labels["collection"] = "_default"
+			}
+		} else if len(parts) == 4 {
+			labels = prometheus.Labels{
+				"bucket":     parts[0],
+				"scope":      parts[1],
+				"collection": parts[2],
+				"index":      parts[3],
+			}
+		} else {
+			panic(fmt.Errorf("unhandled stats name pattern: %v", key))
+		}
+		results, err := m.getMetricsFor(vals, labels, false)
+		if err != nil {
+			panic(fmt.Errorf("while updating GSI metrics for %v: %w", key, err))
+		}
+		for _, metric := range results {
+			fmt.Printf("GSI sending %s\n", metric.Desc().String())
+			metrics <- metric
+		}
+	}
+	fmt.Println("GSI done")
+	// close(metrics)
 }
 
 func NewMetrics(node *couchbase.Node, cfg *config.Config, ms MetricSet) (*Metrics, error) {
 	ret := &Metrics{
 		node: node,
-		cfg: cfg,
-		msi: make(metricSetInternal),
+		cfg:  cfg,
+		msi:  make(metricSetInternal),
 	}
 	ret.updateMetricSet(ms)
 	return ret, nil
@@ -61,33 +136,31 @@ func (m *Metrics) updateMetricSet(ms MetricSet) {
 				}
 			}
 			existing = &metricInternal{
-				gauge: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-					Name: key,
-				}, labels),
+				desc: prometheus.NewDesc(key, "", labels, nil),
 			}
-			prometheus.MustRegister(existing.gauge)
 		}
 		existing.gsiName = metric.Name
 		existing.global = metric.Global
 		m.msi[key] = existing
 		alive[key] = true
 	}
-	for key, metric := range m.msi {
+	for key := range m.msi {
 		if _, ok := alive[key]; !ok {
-			prometheus.Unregister(metric.gauge)
 			delete(m.msi, key)
 		}
 	}
 }
 
-func (m *Metrics) updateMetrics(values map[string]interface{}, labels prometheus.Labels, global bool) error  {
+func (m *Metrics) getMetricsFor(values map[string]interface{}, labels prometheus.Labels,
+	global bool) ([]prometheus.Metric, error) {
+	result := make([]prometheus.Metric, 0, len(values))
 	for key, metric := range m.msi {
 		if (global && !metric.global) || (!global && metric.global) {
 			continue
 		}
 		valueTyp, ok := values[metric.gsiName]
 		if !ok {
-			return fmt.Errorf("no GSI metric for expected %s (key %s)", metric.gsiName, key)
+			return nil, fmt.Errorf("no GSI metric for expected %s (key %s)", metric.gsiName, key)
 		}
 		var value float64
 		switch vt := valueTyp.(type) {
@@ -105,64 +178,18 @@ func (m *Metrics) updateMetrics(values map[string]interface{}, labels prometheus
 		case int:
 			value = float64(vt)
 		default:
-			return fmt.Errorf("unknown type %t for value %v metric %s (%s)", valueTyp, valueTyp, metric.gsiName, key)
+			return nil, fmt.Errorf("unknown type %t for value %v metric %s (%s)", valueTyp, valueTyp, metric.gsiName,
+				key)
 		}
-		metric.gauge.With(labels).Set(value)
-	}
-	return nil
-}
-
-func (m *Metrics) Collect() error {
-	res, err := m.node.RestClient().Do(context.TODO(), &cbrest.Request{
-		Method:   "GET",
-		Endpoint: "/api/v1/stats",
-		Service:  cbrest.ServiceGSI,
-	})
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return err
-	}
-	type metrics map[string]map[string]interface{}
-	var val metrics
-	if err = json.Unmarshal(body, &val); err != nil {
-		return err
-	}
-	const statsKeyGlobal = "indexer"
-	if err = m.updateMetrics(val[statsKeyGlobal], nil, true); err != nil {
-		return fmt.Errorf("while updating global GSI metrics: %w", err)
-	}
-	for key, vals := range val {
-		if key == statsKeyGlobal {
-			continue
-		}
-		var labels prometheus.Labels
-		parts := strings.Split(key, ":")
-		if len(parts) == 2 {
-			labels = prometheus.Labels{
-				"bucket": parts[0],
-				"index": parts[1],
-			}
+		var labelValues []string
+		if !metric.global {
 			if m.cfg.FakeCollections {
-				labels["scope"] = "_default"
-				labels["collection"] = "_default"
+				labelValues = []string{labels["bucket"], labels["scope"], labels["collection"], labels["index"]}
+			} else {
+				labelValues = []string{labels["bucket"], labels["index"]}
 			}
-		} else if len(parts) == 4 {
-			labels = prometheus.Labels{
-				"bucket": parts[0],
-				"scope": parts[1],
-				"collection": parts[2],
-				"index": parts[3],
-			}
-		} else {
-			return fmt.Errorf("unhandled stats name pattern: %v", key)
 		}
-		if err = m.updateMetrics(vals, labels, false); err != nil {
-			return fmt.Errorf("whille updating GSI metrics for %v: %w", key, err)
-		}
+		result = append(result, prometheus.MustNewConstMetric(metric.desc, prometheus.GaugeValue, value, labelValues...))
 	}
-	return nil
+	return result, nil
 }
