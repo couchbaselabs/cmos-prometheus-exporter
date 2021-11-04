@@ -65,7 +65,6 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 		panic(err)
 	}
 	buckets := strings.Split(string(res.Body), " ")
-	fmt.Printf("Buckets: %#v\n", buckets)
 	if len(buckets) == 1 && buckets[0] == "" {
 		buckets = nil
 	}
@@ -84,13 +83,10 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 				panic(fmt.Errorf("while processing group %v: %w", group, err))
 			}
 			for _, metric := range results {
-				fmt.Printf("Memcached sending %s\n", metric.Desc().String())
 				metrics <- metric
 			}
 		}
 	}
-	// close(metrics)
-	fmt.Println("memcached done")
 }
 
 func (m *Metrics) processStatGroup(bucket string, groupName string, vals map[string]string) ([]prometheus.Metric,

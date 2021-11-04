@@ -41,7 +41,6 @@ func (m *Metrics) Describe(descs chan<- *prometheus.Desc) {
 	for _, metric := range m.msi {
 		descs <- metric.desc
 	}
-	// close(descs)
 }
 
 func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
@@ -69,7 +68,6 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 		panic(fmt.Errorf("while updating global GSI metrics: %w", err))
 	}
 	for _, metric := range ch {
-		fmt.Printf("GSI sending global %s\n", metric.Desc().String())
 		metrics <- metric
 	}
 	for key, vals := range statsResult {
@@ -102,12 +100,9 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 			panic(fmt.Errorf("while updating GSI metrics for %v: %w", key, err))
 		}
 		for _, metric := range results {
-			fmt.Printf("GSI sending %s\n", metric.Desc().String())
 			metrics <- metric
 		}
 	}
-	fmt.Println("GSI done")
-	// close(metrics)
 }
 
 func NewMetrics(node *couchbase.Node, cfg *config.Config, ms MetricSet) (*Metrics, error) {
