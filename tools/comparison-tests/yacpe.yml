@@ -1,0 +1,4 @@
+couchbase_host: cb6
+couchbase_username: Administrator
+couchbase_password: password
+fake_collections: true

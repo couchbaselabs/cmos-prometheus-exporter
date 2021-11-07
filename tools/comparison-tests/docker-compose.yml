@@ -1,0 +1,25 @@
+version: '3.8'
+services:
+  cb6:
+    image: couchbase/server-sandbox:6.6.0
+  yacpe:
+    build:
+      context: ../..
+    depends_on: [cb6]
+    ports:
+      - '9091:9091'
+    volumes:
+      - ./yacpe.yml:/yacpe.yml
+      - ./yacpe-entrypoint.sh:/entrypoint.sh
+    entrypoint: '/entrypoint.sh'
+  cb7:
+    image: couchbase/server-sandbox:7.0.1
+    ports:
+      - '8091:8091'
+  prom:
+    image: prom/prometheus
+    depends_on: [cb7, yacpe]
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - '9090:9090'

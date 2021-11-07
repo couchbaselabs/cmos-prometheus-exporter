@@ -1,0 +1,19 @@
+name: 'Compare Prometheus Metric Sets'
+description: 'Compare two Prometheus metric sets for accuracy.'
+inputs:
+  prometheus-base-url:
+    description: 'Prometheus Base URL'
+    required: true
+    default: 'http://localhost:9090'
+  base-label-query:
+    description: 'Label query for the base job (the one to compare against)'
+    required: true
+  target-label-query:
+    description: 'Label query for the target job (the one to compare)'
+    required: true
+  github-token:
+    description: 'GitHub Token'
+    required: true
+runs:
+  using: 'node12'
+  main: 'action.js'

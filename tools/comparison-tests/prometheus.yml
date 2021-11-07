@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: yacpe
+    static_configs:
+      - targets:
+        - yacpe:9091
+  - job_name: cb7
+    basic_auth:
+      username: Administrator
+      password: password
+    static_configs:
+      - targets:
+        - cb7:8091

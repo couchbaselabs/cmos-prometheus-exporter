@@ -59,7 +59,6 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 	// gomemcached doesn't have a ListBuckets method (neither does gocbcore for that matter)
 	res, err := m.mc.Send(&gomemcached.MCRequest{
 		Opcode: 0x87, // https://github.com/couchbase/kv_engine/blob/bb8b64eb180b01b566e2fbf54b969e6d20b2a873/docs/BinaryProtocol.md#0x87-list-buckets
-		Opaque: 0xefbeadde,
 	})
 	if err != nil {
 		panic(err)

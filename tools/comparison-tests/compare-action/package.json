@@ -1,0 +1,21 @@
+{
+  "name": "compare-action",
+  "version": "1.0.0",
+  "description": "",
+  "main": "run.js",
+  "scripts": {
+    "start": "node run.js",
+    "package": "node_modules/.bin/ncc build action.js -o dist"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@actions/core": "^1.6.0",
+    "@actions/github": "^5.0.0",
+    "node-fetch": "^2.6.6"
+  },
+  "devDependencies": {
+    "@vercel/ncc": "^0.31.1"
+  }
+}
