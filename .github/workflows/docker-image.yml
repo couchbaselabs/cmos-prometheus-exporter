@@ -20,7 +20,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     - name: Build the Docker image
-      run: docker buildx build . --file Dockerfile --tag ghcr.io/markspolakovs/yacpe:${{ github.sha }}
+      run: docker buildx build -t ghcr.io/markspolakovs/yacpe:${{ github.sha }} .
     - name: Push the Docker image
       run: docker push ghcr.io/markspolakovs/yacpe:${{ github.sha }}
     - name: Tag and push latest
