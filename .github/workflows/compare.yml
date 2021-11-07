@@ -1,0 +1,30 @@
+name: Compare against CB7
+
+on:
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Start test environment
+      run: |
+        docker compose up -d
+        sleep 30
+      working-directory: tools/comparison-tests
+    - name: Compare results
+      uses: ./tools/comparison-tests/compare-action
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        prometheus-base-url: http://localhost:9090
+        base-label-query: '{job="cb7"}'
+        target-label-query: '{job="yacpe"}'
+    - name: Clean up
+      run: docker compose down
+      working-directory: tools/comparison-tests
+        
