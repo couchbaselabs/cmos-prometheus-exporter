@@ -18,7 +18,7 @@
     "kv_vb_itm_memory_bytes": {
       "group": "",
       "pattern": "^vb_(?P<state>.+?)_itm_memory$",
-      "labels": ["bucket", "state"]
+      "labels": ["bucket"]
     },
     "kv_num_vbuckets": {
       "group": "",
