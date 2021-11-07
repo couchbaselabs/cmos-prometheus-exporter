@@ -77,10 +77,10 @@ exports.default = async function(config) {
     };
 }
 
-exports.formatMarkdown = function(results) {
+exports.formatMarkdown = function(results, commit = null) {
     // console.log(results)
     const { coverage, accuracy, covered, accurate, totalBase, issues, missing, extra } = results;
-    return `**Comparison Results**:
+    return `**Comparison Results**${commit === null ? "" : `as of commit \`${commit}\``}:
 
 Coverage: ${covered}/${totalBase} (${(coverage * 100).toFixed(2)}%)
 
@@ -88,17 +88,23 @@ Accuracy: ${accurate}/${covered} (${(accuracy * 100).toFixed(2)}%)
 
 ${Object.keys(issues).length > 0 ? `<details>
 <summary>Issues:</summary>
+
 ${Object.keys(issues).map(label => `\`${label}\`: missing ${issues[label].missing.join(", ")}, extra: ${issues[label].extra.join(", ")}`).join("\n")}
+
 </details>` : ""}
         
 ${missing.length > 0 ? `<details>
 <summary>Missing Series:</summary>
+
 ${missing.map(label => `* \`${label}\``).join("\n")}
+
 </details>` : ""}
 
 ${extra.length > 0 ? `<details>
 <summary>Extra Series:</summary>
+
 ${extra.map(label => `* \`${label}\``).join("\n")}
+
 </details>` : ""}
 `
 }
