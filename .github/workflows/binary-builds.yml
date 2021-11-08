@@ -1,0 +1,33 @@
+name: Build static binaries
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        # build and publish in parallel: linux/386, linux/amd64, windows/386, windows/amd64, darwin/amd64 
+        goos: [linux, windows, darwin]
+        goarch: [amd64]
+    
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: WillAbides/setup-go-faster@v1.6.0
+      with:
+        go-version: 1.17
+
+    - uses: wangyoucao577/go-release-action@v1.20
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        goos: ${{ matrix.goos }}
+        goarch: ${{ matrix.goarch }}
+        project_path: "./cmd/yacpe"
+        binary_name: "yacpe"
+        extra_files: README.md
