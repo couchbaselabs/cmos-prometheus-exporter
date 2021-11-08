@@ -18,12 +18,15 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - uses: wangyoucao577/go-release-action@v1.20
+    - name: Setup Go Faster
+      uses: WillAbides/setup-go-faster@v1.6.0
+    
+    - name: Build binary
+      run: |
+        CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o ./yacpe-build -tags osusergo,netgo ./cmd/yacpe
+    
+    - name: Upload Build Artifact
+      uses: actions/upload-artifact@v2.2.4
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        goos: ${{ matrix.goos }}
-        goarch: ${{ matrix.goarch }}
-        goversion: '1.17'
-        project_path: "./cmd/yacpe"
-        binary_name: "yacpe"
-        extra_files: README.md
+        name: yacpe-${{ matrix.goos }}-${{ matrix.goarch }}
+        path: yacpe-build
