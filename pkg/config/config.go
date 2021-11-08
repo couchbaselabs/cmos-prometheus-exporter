@@ -5,6 +5,7 @@ import (
 	"github.com/couchbase/tools-common/log"
 	"github.com/spf13/viper"
 	"go.uber.org/zap/zapcore"
+	"os"
 )
 
 type LogLevel string
@@ -72,16 +73,23 @@ func Read(path string) (*Config, error) {
 	viper.SetDefault("Bind", ":9091")
 
 	viper.SetConfigName("yacpe")
-	viper.AddConfigPath(".")
 	viper.SetConfigType("yaml")
 
 	if path != "" {
-		viper.AddConfigPath(path)
-	}
-
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return nil, fmt.Errorf("failed to read in config: %w", err)
+		file, err := os.Open(path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open config file: %w", err)
+		}
+		defer file.Close()
+		if err := viper.ReadConfig(file); err != nil {
+			return nil, err
+		}
+	} else {
+		viper.AddConfigPath("/etc/yacpe")
+		viper.AddConfigPath("$HOME/.yacpe")
+		viper.AddConfigPath(".")
+		if err := viper.ReadInConfig(); err != nil {
+			return nil, err
 		}
 	}
 

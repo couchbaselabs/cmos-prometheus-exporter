@@ -16,7 +16,7 @@ import (
 	"net/http"
 )
 
-var flagConfigPath = flag.String("config-path", "./yacpe.yml", "path to read config from")
+var flagConfigPath = flag.String("config-file", "", "path to read config from (leave blank to use defaults)")
 
 func main() {
 	flag.Parse()
@@ -31,6 +31,8 @@ func main() {
 	logCfg.Level = zap.NewAtomicLevelAt(cfg.LogLevel.ToZap())
 	logger, _ := logCfg.Build()
 	defer logger.Sync()
+
+	logger.Sugar().Debugw("Loaded config", "cfg", cfg)
 
 	node, err := couchbase.BootstrapNode(logger.Sugar(), cfg.CouchbaseHost, cfg.CouchbaseUsername, cfg.CouchbasePassword,
 		cfg.CouchbaseManagementPort)
