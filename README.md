@@ -10,13 +10,15 @@ Couchbase Server 7.0 adds a built-in Prometheus statistics system for [gathering
 
 ## Installation
 
+Firstly, please don't use it in production and re-read the disclaimer at the top of this README. If you still want to run it, then read on.
+
 If you use Docker, yacpe is published as an image at `ghcr.io/markspolakovs/yacpe`. First create a config file (like in the below section), then run:
 
 ```sh
-$ docker run -v $(pwd)/yacpe.yaml:/yacpe.yaml -p 9091:9091 ghcr.io/markspolakovs/yacpe
+$ docker run -v $(pwd)/yacpe.yaml:/yacpe.yaml -p 9091:9091 ghcr.io/markspolakovs/yacpe:latest
 ```
 
-Currently no binaries are provided so you will need to build it from source using [Go](https://golang.org/doc/install). To run Yacpe, clone this repository and run `go run ./cmd/yacpe/main.go`.
+If you don't use Docker, you will need to build it from source using [Go](https://golang.org/doc/install). To run Yacpe, clone this repository and run `go run ./cmd/yacpe/main.go`.
 
 ## Configuration
 
