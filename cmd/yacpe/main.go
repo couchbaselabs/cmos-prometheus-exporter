@@ -10,6 +10,7 @@ import (
 	"github.com/markspolakovs/yacpe/pkg/metrics"
 	gsi "github.com/markspolakovs/yacpe/pkg/metrics/gsi"
 	"github.com/markspolakovs/yacpe/pkg/metrics/memcached"
+	"github.com/markspolakovs/yacpe/pkg/metrics/n1ql"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
@@ -50,7 +51,7 @@ func main() {
 
 	hasKV, err := node.HasService(cbrest.ServiceData)
 	if err != nil {
-		logger.Sugar().Fatalw("Failed to get KV port", "err", err)
+		logger.Sugar().Fatalw("Failed to check KV", "err", err)
 	}
 	if hasKV {
 		mc, err := memcached.NewMemcachedMetrics(logger.Named("memcached"), node, ms.Memcached)
@@ -63,7 +64,7 @@ func main() {
 
 	hasGSI, err := node.HasService(cbrest.ServiceGSI)
 	if err != nil {
-		log.Fatal(err)
+		logger.Sugar().Fatalw("Failed to check GSI", "err", err)
 	}
 	if hasGSI {
 		gsiCollector, err := gsi.NewMetrics(logger.Sugar().Named("gsi"), node, cfg, ms.GSI)
@@ -71,6 +72,18 @@ func main() {
 			logger.Sugar().Fatalw("Failed to create GSI collector", "err", err)
 		}
 		reg.MustRegister(gsiCollector)
+	}
+
+	hasN1QL, err := node.HasService(cbrest.ServiceQuery)
+	if err != nil {
+		logger.Sugar().Fatalw("Failed to check N1QL", "err", err)
+	}
+	if hasN1QL {
+		n1qlCollector, err := n1ql.NewMetrics(logger.Sugar().Named("n1ql"), node, cfg, ms.N1QL)
+		if err != nil {
+			logger.Sugar().Fatalw("Failed to create N1QL collector", "err", err)
+		}
+		reg.MustRegister(n1qlCollector)
 	}
 
 	http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))

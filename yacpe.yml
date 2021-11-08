@@ -1,5 +1,5 @@
-couchbase_host: n1.cmos-test.markspolakovs.me
-couchbase_username: metrics
-couchbase_password: dynam1te
+couchbase_host: 10.112.208.101
+couchbase_username: Administrator
+couchbase_password: password
 fake_collections: true
 log_level: trace

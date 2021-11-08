@@ -7,11 +7,13 @@ import (
 	"github.com/creasty/defaults"
 	"github.com/markspolakovs/yacpe/pkg/metrics/gsi"
 	"github.com/markspolakovs/yacpe/pkg/metrics/memcached"
+	"github.com/markspolakovs/yacpe/pkg/metrics/n1ql"
 )
 
 type MetricSet struct {
 	Memcached memcached.MetricSet `json:"memcached"`
 	GSI       gsi.MetricSet       `json:"gsi"`
+	N1QL      n1ql.MetricSet      `json:"n1ql"`
 }
 
 //go:embed defaultMetricSet.json

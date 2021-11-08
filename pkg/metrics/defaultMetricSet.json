@@ -73,5 +73,127 @@
     "index_total_scan_duration": {
       "name": "total_scan_duration"
     }
+  },
+  "n1ql": {
+    "n1ql_errors": {
+      "name": "errors.count",
+      "type": "counter"
+    },
+    "n1ql_updates": {
+      "name": "updates.count",
+      "type": "counter"
+    },
+    "n1ql_requests": {
+      "name": "requests.count",
+      "type": "counter"
+    },
+    "n1ql_result_size": {
+      "name": "result_size.count",
+      "type": "counter"
+    },
+    "n1ql_queued_requests": {
+      "name": "queued_requests.count",
+      "type": "counter"
+    },
+    "n1ql_scan_plus": {
+      "name": "scan_plus.count",
+      "type": "counter"
+    },
+    "n1ql_audit_actions_failed": {
+      "name": "audit_actions_failed.count",
+      "type": "counter"
+    },
+    "n1ql_cancellled": {
+      "name": "cancellled.count",
+      "type": "counter"
+    },
+    "n1ql_invalid_requests": {
+      "name": "invalid_requests.count",
+      "type": "counter"
+    },
+    "n1ql_selects": {
+      "name": "selects.count",
+      "type": "counter"
+    },
+    "n1ql_requests_250ms": {
+      "name": "requests_250ms.count",
+      "type": "counter"
+    },
+    "n1ql_request_time": {
+      "name": "request_time.count",
+      "type": "counter"
+    },
+    "n1ql_unbounded": {
+      "name": "unbounded.count",
+      "type": "counter"
+    },
+    "n1ql_result_count": {
+      "name": "result_count.count",
+      "type": "counter"
+    },
+    "n1ql_audit_requests_total": {
+      "name": "audit_requests_total.count",
+      "type": "counter"
+    },
+    "n1ql_requests_500ms": {
+      "name": "requests_500ms.count",
+      "type": "counter"
+    },
+    "n1ql_at_plus": {
+      "name": "at_plus.count",
+      "type": "counter"
+    },
+    "n1ql_service_time": {
+      "name": "service_time.count",
+      "type": "counter"
+    },
+    "n1ql_audit_requests_filtered": {
+      "name": "audit_requests_filtered.count",
+      "type": "counter"
+    },
+    "n1ql_audit_actions": {
+      "name": "audit_actions.count",
+      "type": "counter"
+    },
+    "n1ql_prepared": {
+      "name": "prepared.count",
+      "type": "counter"
+    },
+    "n1ql_requests_5000ms": {
+      "name": "requests_5000ms.count",
+      "type": "counter"
+    },
+    "n1ql_inserts": {
+      "name": "inserts.count",
+      "type": "counter"
+    },
+    "n1ql_index_scans": {
+      "name": "index_scans.count",
+      "type": "counter"
+    },
+    "n1ql_warnings": {
+      "name": "warnings.count",
+      "type": "counter"
+    },
+    "n1ql_mutations": {
+      "name": "mutations.count",
+      "type": "counter"
+    },
+    "n1ql_deletes": {
+      "name": "deletes.count",
+      "type": "counter"
+    },
+    "n1ql_active_requests": {
+      "name": "active_requests.count",
+      "type": "counter"
+    },
+    "n1ql_primary_scans": {
+      "name": "primary_scans.count",
+      "type": "counter"
+    },
+    "n1ql_requests_1000ms": {
+      "name": "requests_1000ms.count",
+      "type": "counter"
+    }
   }
 }

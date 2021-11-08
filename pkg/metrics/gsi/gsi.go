@@ -55,22 +55,26 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 		ExpectedStatusCode: http.StatusOK,
 	})
 	if err != nil {
-		panic(err)
+		m.logger.Errorw("Failed to get GSI stats", "err", err)
+		return
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		panic(err)
+		m.logger.Errorw("Failed to read GSI stats", "err", err)
+		return
 	}
 	type gsiStatsResult map[string]map[string]interface{}
 	var statsResult gsiStatsResult
 	if err = json.Unmarshal(body, &statsResult); err != nil {
-		panic(err)
+		m.logger.Errorw("Failed to parse GSI stats", "err", err)
+		return
 	}
 	const statsKeyGlobal = "indexer"
 	ch, err := m.getMetricsFor(statsResult[statsKeyGlobal], nil, true)
 	if err != nil {
-		panic(fmt.Errorf("while updating global GSI metrics: %w", err))
+		m.logger.Errorw("Error while updating global GSI metrics", "err", err)
+		return
 	}
 	for _, metric := range ch {
 		metrics <- metric
@@ -98,11 +102,13 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 				"index":      parts[3],
 			}
 		} else {
-			panic(fmt.Errorf("unhandled stats name pattern: %v", key))
+			m.logger.Errorw("Unhandled stats name pattern", "key", key)
+			return
 		}
 		results, err := m.getMetricsFor(vals, labels, false)
 		if err != nil {
-			panic(fmt.Errorf("while updating GSI metrics for %v: %w", key, err))
+			m.logger.Errorw("While updating GSI metrics", "key", key, "err", err)
+			return
 		}
 		for _, metric := range results {
 			metrics <- metric
