@@ -15,7 +15,7 @@ jobs:
     - name: Start test environment
       run: |
         docker compose up -d
-        sleep 30
+        sleep 90
       working-directory: tools/comparison-tests
     - name: Compare results
       uses: ./tools/comparison-tests/compare-action
