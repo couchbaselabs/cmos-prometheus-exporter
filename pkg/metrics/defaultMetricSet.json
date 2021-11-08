@@ -103,8 +103,8 @@
       "name": "audit_actions_failed.count",
       "type": "counter"
     },
-    "n1ql_cancellled": {
-      "name": "cancellled.count",
+    "n1ql_cancelled": {
+      "name": "cancelled.count",
       "type": "counter"
     },
     "n1ql_invalid_requests": {
