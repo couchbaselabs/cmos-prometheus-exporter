@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/couchbase/gomemcached v0.1.3
 	github.com/couchbase/tools-common v0.0.0-20211007121205-8966656a7bc5
+	github.com/creasty/defaults v1.5.2
 	github.com/prometheus/client_golang v1.11.0
 	github.com/spf13/viper v1.9.0
 )

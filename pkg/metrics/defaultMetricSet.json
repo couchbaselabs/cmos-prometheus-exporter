@@ -34,7 +34,34 @@
       "group" : "",
       "pattern": "^uptime$",
       "labels": []
-    }
+    },
+    "kv_ops": [
+      {
+        "group": "",
+        "pattern": "^ep_num_ops_(?P<op>get_meta|set_meta|del_meta|set_ret_meta|del_ret_meta)$",
+        "labels": ["bucket", "op"],
+        "type": "counter"
+      }, {
+        "group": "",
+        "pattern": "^ep_num_ops_get_meta_on_set_meta$",
+        "labels": ["bucket"],
+        "constLabels": {
+          "op": "get_meta_for_set_meta"
+        },
+        "type": "counter"
+      }, {
+        "group": "",
+        "pattern": "^cmd_(?P<op>flush|set)$",
+        "labels": ["bucket", "op"],
+        "type": "counter"
+      },
+      {
+        "group": "",
+        "pattern": "^(?P<op>cas|get|delete|incr|decr)_(?P<result>hit|miss)e?s$",
+        "labels": ["bucket", "op", "result"],
+        "type": "counter"
+      }
+    ]
   },
   "gsi": {
     "index_raw_data_size": {

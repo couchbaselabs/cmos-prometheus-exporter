@@ -9,6 +9,6 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o ./yacpe -
 
 FROM alpine
 
-COPY --from=builder --chmod=0777 /src/yacpe /yacpe
+COPY --from=builder --chmod=0755 /src/yacpe /yacpe
 
 ENTRYPOINT ["/yacpe"]

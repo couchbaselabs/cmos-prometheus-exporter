@@ -1,11 +1,13 @@
 package memcached
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/couchbase/gomemcached"
 	memcached "github.com/couchbase/gomemcached/client"
 	"github.com/couchbase/tools-common/cbrest"
 	"github.com/markspolakovs/yacpe/pkg/couchbase"
+	"github.com/markspolakovs/yacpe/pkg/metrics/common"
 	"github.com/prometheus/client_golang/prometheus"
 	"net"
 	"regexp"
@@ -15,22 +17,46 @@ import (
 )
 
 type MetricConfig struct {
-	Group   string   `json:"group"`
-	Pattern string   `json:"pattern"`
-	Labels  []string `json:"labels"`
-	Help    string   `json:"help,omitempty"`
+	Group       string            `json:"group"`
+	Pattern     string            `json:"pattern"`
+	Labels      []string          `json:"labels"`
+	ConstLabels prometheus.Labels `json:"constLabels"`
+	Help        string            `json:"help,omitempty"`
+	Type        common.MetricType `json:"type" default:"gauge"`
 }
 
-type MetricSet map[string]MetricConfig
+// MetricConfigs allows a JSON metric config to be either an object or an array.
+type MetricConfigs struct {
+	Values []MetricConfig
+}
+
+func (m *MetricConfigs) UnmarshalJSON(bytes []byte) error {
+	switch bytes[0] {
+	case '{':
+		var val MetricConfig
+		if err := json.Unmarshal(bytes, &val); err != nil {
+			return err
+		}
+		m.Values = []MetricConfig{val}
+		return nil
+	case '[':
+		return json.Unmarshal(bytes, &m.Values)
+	default:
+		return fmt.Errorf("invalid input for MetricConfigs")
+	}
+}
+
+type MetricSet map[string]MetricConfigs
 
 type internalStat struct {
-	exp    *regexp.Regexp
-	labels []string
-	desc   *prometheus.Desc
+	desc      *prometheus.Desc
+	exp       *regexp.Regexp
+	valueType common.MetricType
+	labels    []string
 }
 
-// Map of groups to metric names to metrics. IOW, stats[memcachedGroupName][prometheusMetricName]
-type internalStatsMap map[string]map[string]*internalStat
+// internalStatsMap is a map of Memcached STAT groups to metrics.
+type internalStatsMap map[string][]*internalStat
 
 type Metrics struct {
 	FakeCollections bool
@@ -42,15 +68,12 @@ type Metrics struct {
 	mux             sync.Mutex
 }
 
-func (m *Metrics) Describe(descs chan<- *prometheus.Desc) {
-	m.mux.Lock()
-	defer m.mux.Unlock()
-	for _, group := range m.stats {
-		for _, stat := range group {
-			descs <- stat.desc
-		}
-	}
-	// close(descs)
+func (m *Metrics) Describe(_ chan<- *prometheus.Desc) {
+	// Don't emit any descriptors.
+	// This will make this collector unchecked (see https://pkg.go.dev/github.com/prometheus/client_golang/prometheus#Collector).
+	// We need to be an unchecked collector, because CB7's KV can sometimes emit metrics with inconsistent label names,
+	// which a checked collector would reject. For example, it will emit kv_ops{bucket="travel-sample",op="flush"}
+	// and kv_ops{bucket="travel-sample",result="hit",op="get"} simultaneously.
 }
 
 func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
@@ -91,15 +114,15 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 func (m *Metrics) processStatGroup(bucket string, groupName string, vals map[string]string) ([]prometheus.Metric,
 	error) {
 	result := make([]prometheus.Metric, 0, len(m.stats[groupName]))
-	for _, stat := range m.stats[groupName] {
+	for _, metric := range m.stats[groupName] {
 		for key, valStr := range vals {
-			if match := stat.exp.FindStringSubmatch(key); match != nil {
+			if match := metric.exp.FindStringSubmatch(key); match != nil {
 				val, err := strconv.ParseFloat(valStr, 64)
 				if err != nil {
 					return nil, fmt.Errorf("failed to parseFloat for stat %s (val %v): %w", key, val, err)
 				}
-				labelValues := make([]string, len(stat.labels))
-				for i, label := range stat.labels {
+				labelValues := make([]string, len(metric.labels))
+				for i, label := range metric.labels {
 					// Check well-known metric names
 					switch label {
 					case "bucket":
@@ -110,15 +133,15 @@ func (m *Metrics) processStatGroup(bucket string, groupName string, vals map[str
 						if m.FakeCollections {
 							labelValues[i] = "_default"
 						} else {
-							labelValues[i] = match[stat.exp.SubexpIndex(label)]
+							labelValues[i] = match[metric.exp.SubexpIndex(label)]
 						}
 					default:
-						labelValues[i] = match[stat.exp.SubexpIndex(label)]
+						labelValues[i] = match[metric.exp.SubexpIndex(label)]
 					}
 				}
 				result = append(result, prometheus.MustNewConstMetric(
-					stat.desc,
-					prometheus.GaugeValue,
+					metric.desc,
+					metric.valueType.ToPrometheus(),
 					val,
 					labelValues...,
 				))
@@ -160,45 +183,29 @@ func NewMemcachedMetrics(node *couchbase.Node, metricSet MetricSet) (*Metrics, e
 func (m *Metrics) updateMetricSet(ms MetricSet) error {
 	m.mux.Lock()
 	defer m.mux.Unlock()
-	existing := m.stats
-	if existing == nil {
-		existing = make(internalStatsMap, 0)
-	}
-	alive := make(map[string]map[string]bool)
-	for metric, val := range ms {
-		if _, ok := existing[val.Group]; !ok {
-			existing[val.Group] = make(map[string]*internalStat)
-		}
-		exp, err := regexp.Compile(val.Pattern)
-		if err != nil {
-			return err
-		}
-		result, found := existing[val.Group][metric]
-		if !found {
-			result = &internalStat{
-				exp:    exp,
-				labels: val.Labels,
-				desc:   prometheus.NewDesc(metric, val.Help, val.Labels, nil),
+	// We can get away with creating a whole new stats map, including new prometheus.Desc's, because:
+	// > Descriptors that share the same fully-qualified names and the same label values of their constLabels are considered equal.
+	// (from https://pkg.go.dev/github.com/prometheus/client_golang/prometheus#Desc)
+	statsMap := make(internalStatsMap)
+	for metric, set := range ms {
+		for _, val := range set.Values {
+			exp, err := regexp.Compile(val.Pattern)
+			if err != nil {
+				return err
 			}
-		}
-		result.exp = exp
-		result.labels = val.Labels
-		existing[val.Group][metric] = result
-		if _, ok := alive[val.Group]; !ok {
-			alive[val.Group] = make(map[string]bool)
-		}
-		alive[val.Group][metric] = true
-	}
+			stat := internalStat{
+				exp:       exp,
+				labels:    val.Labels,
+				valueType: val.Type,
+				desc:      prometheus.NewDesc(metric, val.Help, val.Labels, val.ConstLabels),
+			}
 
-	for group, metrics := range existing {
-		for metric := range metrics {
-			if _, ok := alive[group][metric]; !ok {
-				delete(existing[group], metric)
-			}
+			// We can do this, since append(nil) will automatically make()
+			statsMap[val.Group] = append(statsMap[val.Group], &stat)
 		}
 	}
 
 	m.ms = ms
-	m.stats = existing
+	m.stats = statsMap
 	return nil
 }
