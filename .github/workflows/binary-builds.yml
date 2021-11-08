@@ -25,10 +25,10 @@ jobs:
     
     - name: Build binary
       run: |
-        CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o ./yacpe-build -tags osusergo,netgo ./cmd/yacpe
+        CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o ./yacpe-$(git rev-parse --short HEAD)-${{ matrix.goos }}-${{ matrix.goarch }} -tags osusergo,netgo ./cmd/yacpe
     
     - name: Upload Build Artifact
       uses: actions/upload-artifact@v2.2.4
       with:
         name: yacpe-${{ matrix.goos }}-${{ matrix.goarch }}
-        path: yacpe-build
+        path: yacpe-*
