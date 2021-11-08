@@ -15,14 +15,14 @@ Firstly, please don't use it in production and re-read the disclaimer at the top
 If you use Docker, yacpe is published as an image at `ghcr.io/markspolakovs/yacpe`. First create a config file (like in the below section), then run:
 
 ```sh
-$ docker run -v $(pwd)/yacpe.yaml:/yacpe.yaml -p 9091:9091 ghcr.io/markspolakovs/yacpe:latest
+$ docker run -v $(pwd)/yacpe.yaml:/ycpe.yml -p 9091:9091 ghcr.io/markspolakovs/yacpe:latest
 ```
 
 If you don't use Docker, you will need to build it from source using [Go](https://golang.org/doc/install). To run Yacpe, clone this repository and run `go run ./cmd/yacpe/main.go`.
 
 ## Configuration
 
-Yacpe is configured using a `yacpe.yaml` file. The configuration options are enumerated in [`pkg/config/config.go`](https://github.com/markspolakovs/yacpe/blob/master/pkg/config/config.go).
+Yacpe is configured using a `yacpe.yml` file. The configuration options are enumerated in [`pkg/config/config.go`](https://github.com/markspolakovs/yacpe/blob/master/pkg/config/config.go).
 
 ```yaml
 couchbase_host: 10.112.208.101 # IP address or hostname of the Couchbase Server instance

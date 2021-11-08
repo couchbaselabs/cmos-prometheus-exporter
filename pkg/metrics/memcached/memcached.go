@@ -9,6 +9,7 @@ import (
 	"github.com/markspolakovs/yacpe/pkg/couchbase"
 	"github.com/markspolakovs/yacpe/pkg/metrics/common"
 	"github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/zap"
 	"net"
 	"regexp"
 	"strconv"
@@ -66,6 +67,7 @@ type Metrics struct {
 	mc              *memcached.Client
 	ms              MetricSet
 	mux             sync.Mutex
+	logger          *zap.SugaredLogger
 }
 
 func (m *Metrics) Describe(_ chan<- *prometheus.Desc) {
@@ -77,6 +79,7 @@ func (m *Metrics) Describe(_ chan<- *prometheus.Desc) {
 }
 
 func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
+	m.logger.Debug("Starting memcached collection")
 	m.mux.Lock()
 	defer m.mux.Unlock()
 	// gomemcached doesn't have a ListBuckets method (neither does gocbcore for that matter)
@@ -109,6 +112,7 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 			}
 		}
 	}
+	m.logger.Debug("memcached collection done")
 }
 
 func (m *Metrics) processStatGroup(bucket string, groupName string, vals map[string]string) ([]prometheus.Metric,
@@ -155,7 +159,7 @@ func (m *Metrics) Close() error {
 	return m.mc.Close()
 }
 
-func NewMemcachedMetrics(node *couchbase.Node, metricSet MetricSet) (*Metrics, error) {
+func NewMemcachedMetrics(logger *zap.SugaredLogger, node *couchbase.Node, metricSet MetricSet) (*Metrics, error) {
 	kvPort, err := node.GetServicePort(cbrest.ServiceData)
 	if err != nil {
 		return nil, err
@@ -173,6 +177,7 @@ func NewMemcachedMetrics(node *couchbase.Node, metricSet MetricSet) (*Metrics, e
 		node:     node,
 		mc:       mc,
 		hostPort: hostPort,
+		logger:   logger,
 	}
 	if err = ret.updateMetricSet(metricSet); err != nil {
 		return nil, err

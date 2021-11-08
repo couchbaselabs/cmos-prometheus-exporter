@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"github.com/couchbase/tools-common/cbrest"
 	"github.com/markspolakovs/yacpe/pkg/config"
 	"github.com/markspolakovs/yacpe/pkg/couchbase"
@@ -9,19 +11,31 @@ import (
 	"github.com/markspolakovs/yacpe/pkg/metrics/memcached"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.uber.org/zap"
 	"log"
 	"net/http"
 )
 
+var flagConfigPath = flag.String("config-path", "./yacpe.yml", "path to read config from")
+
 func main() {
-	cfg, err := config.Read()
+	flag.Parse()
+
+	cfg, err := config.Read(*flagConfigPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	node, err := couchbase.BootstrapNode(cfg.CouchbaseHost, cfg.CouchbaseUsername, cfg.CouchbasePassword, cfg.CouchbaseManagementPort)
+	// From this point on, we should switch to using Zap for logging.
+	logCfg := zap.NewProductionConfig()
+	logCfg.Level = zap.NewAtomicLevelAt(cfg.LogLevel.ToZap())
+	logger, _ := logCfg.Build()
+	defer logger.Sync()
+
+	node, err := couchbase.BootstrapNode(logger.Sugar(), cfg.CouchbaseHost, cfg.CouchbaseUsername, cfg.CouchbasePassword,
+		cfg.CouchbaseManagementPort)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(fmt.Errorf("bootstrapping failed: %w", err))
 	}
 
 	ms := metrics.LoadDefaultMetricSet()
@@ -32,7 +46,7 @@ func main() {
 		log.Fatal(err)
 	}
 	if hasKV {
-		mc, err := memcached.NewMemcachedMetrics(node, ms.Memcached)
+		mc, err := memcached.NewMemcachedMetrics(logger.Sugar().Named("memcached"), node, ms.Memcached)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -45,7 +59,7 @@ func main() {
 		log.Fatal(err)
 	}
 	if hasGSI {
-		gsiCollector, err := gsi.NewMetrics(node, cfg, ms.GSI)
+		gsiCollector, err := gsi.NewMetrics(logger.Sugar().Named("gsi"), node, cfg, ms.GSI)
 		if err != nil {
 			log.Fatal(err)
 		}

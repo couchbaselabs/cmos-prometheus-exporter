@@ -6,17 +6,19 @@ import (
 	"fmt"
 	"github.com/couchbase/tools-common/aprov"
 	"github.com/couchbase/tools-common/cbrest"
+	"github.com/couchbase/tools-common/log"
+	"go.uber.org/zap"
 	"io/ioutil"
-	"log"
 )
 
 type Node struct {
-	Hostname string
-	creds aprov.Provider
-	rest *cbrest.Client
-	ccm *cbrest.ClusterConfigManager
-	pollCtx context.Context
+	Hostname   string
+	creds      aprov.Provider
+	rest       *cbrest.Client
+	ccm        *cbrest.ClusterConfigManager
+	pollCtx    context.Context
 	pollCancel context.CancelFunc
+	logger     *zap.SugaredLogger
 }
 
 func (n *Node) Close() error {
@@ -25,7 +27,8 @@ func (n *Node) Close() error {
 	return nil
 }
 
-func BootstrapNode(node, username, password string, mgmtPort int) (*Node, error) {
+func BootstrapNode(logger *zap.SugaredLogger, node, username, password string, mgmtPort int) (*Node, error) {
+	log.SetLogger(&CBLogZapLogger{logger: logger.Desugar().WithOptions(zap.AddCallerSkip(3)).Named("cb").Sugar()})
 	creds := &aprov.Static{
 		UserAgent: "yacpe/0.0.1",
 		Username:  username,
@@ -35,17 +38,18 @@ func BootstrapNode(node, username, password string, mgmtPort int) (*Node, error)
 		ConnectionString: fmt.Sprintf("couchbase://%s:%d", node, mgmtPort),
 		Provider:         creds,
 		TLSConfig:        nil,
-		DisableCCP: 		true,
-		ThisNodeOnly:     true,
+		DisableCCP:       true,
+		ConnectionMode:   cbrest.ConnectionModeThisNodeOnly,
 	})
 	if err != nil {
 		return nil, err
 	}
 	return &Node{
 		Hostname: node,
-		rest: client,
-		creds: creds,
-		ccm: cbrest.NewClusterConfigManager(),
+		rest:     client,
+		creds:    creds,
+		ccm:      cbrest.NewClusterConfigManager(),
+		logger:   logger.Named(fmt.Sprintf("node[%s]", node)),
 	}, nil
 }
 
@@ -61,7 +65,7 @@ func (n *Node) updateClusterConfig() error {
 	res, err := n.rest.Do(context.TODO(), &cbrest.Request{
 		Method:   "GET",
 		Endpoint: cbrest.EndpointNodesServices,
-		Service: cbrest.ServiceManagement,
+		Service:  cbrest.ServiceManagement,
 	})
 	if err != nil {
 		return err
@@ -86,7 +90,7 @@ func (n *Node) pollClusterConfig() {
 			return
 		}
 		if err := n.updateClusterConfig(); err != nil {
-			log.Fatal(err)
+			n.logger.Fatalw("Failed to update cluster config", "err", err)
 		}
 	}
 }

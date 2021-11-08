@@ -8,6 +8,7 @@ import (
 	"github.com/markspolakovs/yacpe/pkg/config"
 	"github.com/markspolakovs/yacpe/pkg/couchbase"
 	"github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"strings"
 	"sync"
@@ -29,10 +30,11 @@ type metricInternal struct {
 type metricSetInternal map[string]*metricInternal
 
 type Metrics struct {
-	node *couchbase.Node
-	msi  metricSetInternal
-	mux  sync.Mutex
-	cfg  *config.Config
+	node   *couchbase.Node
+	msi    metricSetInternal
+	mux    sync.Mutex
+	cfg    *config.Config
+	logger *zap.SugaredLogger
 }
 
 func (m *Metrics) Describe(descs chan<- *prometheus.Desc) {
@@ -44,6 +46,7 @@ func (m *Metrics) Describe(descs chan<- *prometheus.Desc) {
 }
 
 func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
+	m.logger.Debug("Starting GSI collection")
 	res, err := m.node.RestClient().Do(context.TODO(), &cbrest.Request{
 		Method:   "GET",
 		Endpoint: "/api/v1/stats",
@@ -103,13 +106,15 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 			metrics <- metric
 		}
 	}
+	m.logger.Debug("GSI collection done")
 }
 
-func NewMetrics(node *couchbase.Node, cfg *config.Config, ms MetricSet) (*Metrics, error) {
+func NewMetrics(logger *zap.SugaredLogger, node *couchbase.Node, cfg *config.Config, ms MetricSet) (*Metrics, error) {
 	ret := &Metrics{
-		node: node,
-		cfg:  cfg,
-		msi:  make(metricSetInternal),
+		node:   node,
+		cfg:    cfg,
+		msi:    make(metricSetInternal),
+		logger: logger,
 	}
 	ret.updateMetricSet(ms)
 	return ret, nil
