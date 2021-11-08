@@ -27,5 +27,5 @@ jobs:
         docker push ghcr.io/markspolakovs/yacpe:${{ github.sha }}
     - name: Tag and push latest
       run: |
-        docker tag docker push ghcr.io/markspolakovs/yacpe:${{ github.sha }} docker push ghcr.io/markspolakovs/yacpe:latest
+        docker tag ghcr.io/markspolakovs/yacpe:${{ github.sha }} ghcr.io/markspolakovs/yacpe:latest
         docker push ghcr.io/markspolakovs/yacpe:latest
