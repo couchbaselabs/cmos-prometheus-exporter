@@ -10,6 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"io/ioutil"
+	"net/http"
 	"strings"
 	"sync"
 )
@@ -48,9 +49,10 @@ func (m *Metrics) Describe(descs chan<- *prometheus.Desc) {
 func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 	m.logger.Debug("Starting GSI collection")
 	res, err := m.node.RestClient().Do(context.TODO(), &cbrest.Request{
-		Method:   "GET",
-		Endpoint: "/api/v1/stats",
-		Service:  cbrest.ServiceGSI,
+		Method:             "GET",
+		Endpoint:           "/api/v1/stats",
+		Service:            cbrest.ServiceGSI,
+		ExpectedStatusCode: http.StatusOK,
 	})
 	if err != nil {
 		panic(err)

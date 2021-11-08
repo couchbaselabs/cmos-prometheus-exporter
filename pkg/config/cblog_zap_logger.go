@@ -1,4 +1,4 @@
-package couchbase
+package config
 
 import (
 	"github.com/couchbase/tools-common/log"
@@ -6,7 +6,7 @@ import (
 )
 
 type CBLogZapLogger struct {
-	logger *zap.SugaredLogger
+	Logger *zap.SugaredLogger
 }
 
 func (c *CBLogZapLogger) Log(level log.Level, format string, args ...interface{}) {
@@ -14,14 +14,14 @@ func (c *CBLogZapLogger) Log(level log.Level, format string, args ...interface{}
 	case log.LevelTrace:
 		fallthrough
 	case log.LevelDebug:
-		c.logger.Debugf(format, args...)
+		c.Logger.Debugf(format, args...)
 	case log.LevelInfo:
-		c.logger.Infof(format, args...)
+		c.Logger.Infof(format, args...)
 	case log.LevelWarning:
-		c.logger.Warnf(format, args...)
+		c.Logger.Warnf(format, args...)
 	case log.LevelError:
-		c.logger.Errorf(format, args...)
+		c.Logger.Errorf(format, args...)
 	case log.LevelPanic:
-		c.logger.Panicf(format, args...)
+		c.Logger.Panicf(format, args...)
 	}
 }

@@ -2,8 +2,9 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	goutilslog "github.com/couchbase/goutils/logging"
 	"github.com/couchbase/tools-common/cbrest"
+	toolscommonlog "github.com/couchbase/tools-common/log"
 	"github.com/markspolakovs/yacpe/pkg/config"
 	"github.com/markspolakovs/yacpe/pkg/couchbase"
 	"github.com/markspolakovs/yacpe/pkg/metrics"
@@ -34,10 +35,14 @@ func main() {
 
 	logger.Sugar().Debugw("Loaded config", "cfg", cfg)
 
+	toolscommonlog.SetLogger(&config.CBLogZapLogger{Logger: logger.WithOptions(zap.AddCallerSkip(3)).Named("cb").Sugar()})
+	goutilslog.SetLogger(&config.GoUtilsZapLogger{Logger: logger.WithOptions(zap.AddCallerSkip(2)).Named(
+		"memcached").Sugar()})
+
 	node, err := couchbase.BootstrapNode(logger.Sugar(), cfg.CouchbaseHost, cfg.CouchbaseUsername, cfg.CouchbasePassword,
 		cfg.CouchbaseManagementPort)
 	if err != nil {
-		log.Fatal(fmt.Errorf("bootstrapping failed: %w", err))
+		logger.Sugar().Fatalw("Failed to bootstrap cluster", "err", err)
 	}
 
 	ms := metrics.LoadDefaultMetricSet()
@@ -45,12 +50,12 @@ func main() {
 
 	hasKV, err := node.HasService(cbrest.ServiceData)
 	if err != nil {
-		log.Fatal(err)
+		logger.Sugar().Fatalw("Failed to get KV port", "err", err)
 	}
 	if hasKV {
-		mc, err := memcached.NewMemcachedMetrics(logger.Sugar().Named("memcached"), node, ms.Memcached)
+		mc, err := memcached.NewMemcachedMetrics(logger.Named("memcached"), node, ms.Memcached)
 		if err != nil {
-			log.Fatal(err)
+			logger.Sugar().Fatalw("Failed to create memcached collector", "err", err)
 		}
 		defer mc.Close()
 		reg.MustRegister(mc)
@@ -63,12 +68,12 @@ func main() {
 	if hasGSI {
 		gsiCollector, err := gsi.NewMetrics(logger.Sugar().Named("gsi"), node, cfg, ms.GSI)
 		if err != nil {
-			log.Fatal(err)
+			logger.Sugar().Fatalw("Failed to create GSI collector", "err", err)
 		}
 		reg.MustRegister(gsiCollector)
 	}
 
 	http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
-	log.Printf("listening on %s", cfg.Bind)
+	logger.Info("HTTP server starting", zap.String("address", cfg.Bind))
 	log.Fatal(http.ListenAndServe(cfg.Bind, nil))
 }

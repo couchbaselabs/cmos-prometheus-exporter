@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/couchbase/tools-common/aprov"
 	"github.com/couchbase/tools-common/cbrest"
-	"github.com/couchbase/tools-common/log"
 	"go.uber.org/zap"
 	"io/ioutil"
 )
@@ -28,7 +27,6 @@ func (n *Node) Close() error {
 }
 
 func BootstrapNode(logger *zap.SugaredLogger, node, username, password string, mgmtPort int) (*Node, error) {
-	log.SetLogger(&CBLogZapLogger{logger: logger.Desugar().WithOptions(zap.AddCallerSkip(3)).Named("cb").Sugar()})
 	creds := &aprov.Static{
 		UserAgent: "yacpe/0.0.1",
 		Username:  username,

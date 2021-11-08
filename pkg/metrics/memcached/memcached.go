@@ -67,7 +67,7 @@ type Metrics struct {
 	mc              *memcached.Client
 	ms              MetricSet
 	mux             sync.Mutex
-	logger          *zap.SugaredLogger
+	logger          *zap.Logger
 }
 
 func (m *Metrics) Describe(_ chan<- *prometheus.Desc) {
@@ -159,12 +159,13 @@ func (m *Metrics) Close() error {
 	return m.mc.Close()
 }
 
-func NewMemcachedMetrics(logger *zap.SugaredLogger, node *couchbase.Node, metricSet MetricSet) (*Metrics, error) {
+func NewMemcachedMetrics(logger *zap.Logger, node *couchbase.Node, metricSet MetricSet) (*Metrics, error) {
 	kvPort, err := node.GetServicePort(cbrest.ServiceData)
 	if err != nil {
 		return nil, err
 	}
 	hostPort := net.JoinHostPort(node.Hostname, strconv.Itoa(kvPort))
+	logger.Debug("Connecting to", zap.String("hostPort", hostPort))
 	mc, err := memcached.Connect("tcp", hostPort)
 	if err != nil {
 		return nil, err
