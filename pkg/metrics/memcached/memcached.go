@@ -24,6 +24,7 @@ type MetricConfig struct {
 	ConstLabels prometheus.Labels `json:"constLabels"`
 	Help        string            `json:"help,omitempty"`
 	Type        common.MetricType `json:"type" default:"gauge"`
+	Singleton   bool              `json:"singleton"`
 }
 
 // MetricConfigs allows a JSON metric config to be either an object or an array.
@@ -50,10 +51,10 @@ func (m *MetricConfigs) UnmarshalJSON(bytes []byte) error {
 type MetricSet map[string]MetricConfigs
 
 type internalStat struct {
-	desc      *prometheus.Desc
-	exp       *regexp.Regexp
-	valueType common.MetricType
-	labels    []string
+	MetricConfig
+	name string
+	desc *prometheus.Desc
+	exp  *regexp.Regexp
 }
 
 // internalStatsMap is a map of Memcached STAT groups to metrics.
@@ -87,25 +88,32 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 		Opcode: 0x87, // https://github.com/couchbase/kv_engine/blob/bb8b64eb180b01b566e2fbf54b969e6d20b2a873/docs/BinaryProtocol.md#0x87-list-buckets
 	})
 	if err != nil {
-		panic(err)
+		m.logger.Error("When listing buckets", zap.Error(err))
 	}
 	buckets := strings.Split(string(res.Body), " ")
 	if len(buckets) == 1 && buckets[0] == "" {
 		buckets = nil
 	}
+	singletons := make(map[string]struct{})
 	for _, bucket := range buckets {
 		_, err = m.mc.SelectBucket(bucket)
 		if err != nil {
-			panic(err)
+			m.logger.Error("When selecting bucket", zap.String("bucket", bucket), zap.Error(err))
 		}
+		m.logger.Debug("Selected bucket", zap.String("bucket", bucket))
 		for group := range m.stats {
+			m.logger.Debug("Requesting stats for", zap.String("group", group))
 			allStats, err := m.mc.StatsMap(group)
 			if err != nil {
-				panic(fmt.Errorf("while executing memcached stats for %v: %w", group, err))
+				m.logger.Error("When requesting stats map", zap.String("bucket", bucket), zap.String("group", group),
+					zap.Error(err))
+				continue
 			}
-			results, err := m.processStatGroup(bucket, group, allStats)
+			results, err := m.processStatGroup(bucket, group, allStats, singletons)
 			if err != nil {
-				panic(fmt.Errorf("while processing group %v: %w", group, err))
+				m.logger.Error("When requesting stats map", zap.String("bucket", bucket), zap.String("group", group),
+					zap.Error(err))
+				continue
 			}
 			for _, metric := range results {
 				metrics <- metric
@@ -115,18 +123,25 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 	m.logger.Debug("memcached collection done")
 }
 
-func (m *Metrics) processStatGroup(bucket string, groupName string, vals map[string]string) ([]prometheus.Metric,
+func (m *Metrics) processStatGroup(bucket string, groupName string, vals map[string]string,
+	singletons map[string]struct{}) ([]prometheus.Metric,
 	error) {
 	result := make([]prometheus.Metric, 0, len(m.stats[groupName]))
 	for _, metric := range m.stats[groupName] {
+		// Skip singleton metrics we've already seen
+		if metric.Singleton {
+			if _, ok := singletons[metric.name]; ok {
+				continue
+			}
+		}
 		for key, valStr := range vals {
 			if match := metric.exp.FindStringSubmatch(key); match != nil {
 				val, err := strconv.ParseFloat(valStr, 64)
 				if err != nil {
 					return nil, fmt.Errorf("failed to parseFloat for stat %s (val %v): %w", key, val, err)
 				}
-				labelValues := make([]string, len(metric.labels))
-				for i, label := range metric.labels {
+				labelValues := make([]string, len(metric.Labels))
+				for i, label := range metric.Labels {
 					// Check well-known metric names
 					switch label {
 					case "bucket":
@@ -145,10 +160,13 @@ func (m *Metrics) processStatGroup(bucket string, groupName string, vals map[str
 				}
 				result = append(result, prometheus.MustNewConstMetric(
 					metric.desc,
-					metric.valueType.ToPrometheus(),
+					metric.Type.ToPrometheus(),
 					val,
 					labelValues...,
 				))
+				if metric.Singleton {
+					singletons[metric.name] = struct{}{}
+				}
 			}
 		}
 	}
@@ -200,10 +218,10 @@ func (m *Metrics) updateMetricSet(ms MetricSet) error {
 				return err
 			}
 			stat := internalStat{
-				exp:       exp,
-				labels:    val.Labels,
-				valueType: val.Type,
-				desc:      prometheus.NewDesc(metric, val.Help, val.Labels, val.ConstLabels),
+				MetricConfig: val,
+				name:         metric,
+				exp:          exp,
+				desc:         prometheus.NewDesc(metric, val.Help, val.Labels, val.ConstLabels),
 			}
 
 			// We can do this, since append(nil) will automatically make()

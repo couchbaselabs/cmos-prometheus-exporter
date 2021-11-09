@@ -33,7 +33,8 @@
     "kv_uptime_seconds": {
       "group" : "",
       "pattern": "^uptime$",
-      "labels": []
+      "labels": [],
+      "singleton": true
     },
     "kv_ops": [
       {
