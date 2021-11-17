@@ -18,13 +18,24 @@ import (
 )
 
 type MetricConfig struct {
-	Group       string            `json:"group"`
-	Pattern     string            `json:"pattern"`
-	Labels      []string          `json:"labels"`
+	// Group is the memcached stats group that this stat comes from - which may be a blank string.
+	Group string `json:"group"`
+	// Pattern is the regular expression to match against all stats in the memcached Group.
+	Pattern string `json:"pattern"`
+	// Labels are the labels to apply to the Prometheus metric.
+	// `bucket`, `scope`, and `collection` are treated specially. All other values are assumed to be named
+	// capturing groups in Pattern.
+	Labels []string `json:"labels"`
+	// ConstLabels are constant labels to apply to the metric, in addition to Labels.
 	ConstLabels prometheus.Labels `json:"constLabels"`
-	Help        string            `json:"help,omitempty"`
-	Type        common.MetricType `json:"type" default:"gauge"`
-	Singleton   bool              `json:"singleton"`
+	// Help is the help string to add to the emitted Prometheus metric.
+	Help string `json:"help,omitempty"`
+	// Type is the type of metric to emit (counter, gauge, untyped). Defaults to untyped.
+	Type common.MetricType `json:"type"`
+	// Singleton should be `true` for metrics that should only be emitted once.
+	// This is necessary because the memcached protocol only allows gathering stats in the context of a bucket,
+	// even for stats that are global.
+	Singleton bool `json:"singleton"`
 }
 
 // MetricConfigs allows a JSON metric config to be either an object or an array.
@@ -48,6 +59,7 @@ func (m *MetricConfigs) UnmarshalJSON(bytes []byte) error {
 	}
 }
 
+// MetricSet is a mapping of Prometheus metric names to MetricConfigs.
 type MetricSet map[string]MetricConfigs
 
 type internalStat struct {

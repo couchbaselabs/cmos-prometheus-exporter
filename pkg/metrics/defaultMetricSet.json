@@ -62,17 +62,37 @@
         "labels": ["bucket", "op", "result"],
         "type": "counter"
       }
-    ]
+    ],
+    "kv_vb_perc_mem_resident_ratio": {
+      "group": "",
+      "pattern": "^vb_(?P<state>.+?)_perc_mem_resident$",
+      "labels": ["bucket", "state"],
+      "type": "gauge"
+    }
   },
   "gsi": {
     "index_raw_data_size": {
       "name": "data_size"
+    },
+    "index_data_size": {
+      "name": "index_data_size"
     },
     "index_items_count": {
       "name": "items_count"
     },
     "index_total_scan_duration": {
       "name": "total_scan_duration"
+    },
+    "index_memory_used_total": {
+      "name": "memory_used_total",
+      "global": true
+    },
+    "index_memory_quota": {
+      "name": "memory_quota",
+      "global": true
+    },
+    "index_avg_scan_latency": {
+      "name": "avg_scan_latency"
     }
   },
   "n1ql": {
