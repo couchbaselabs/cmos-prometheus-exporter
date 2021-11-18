@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"github.com/spf13/viper"
+	"go.uber.org/zap/zapcore"
 	"os"
 )
 
@@ -15,6 +16,18 @@ type Config struct {
 	Bind                    string   `mapstructure:"bind"`
 	FakeCollections         bool     `mapstructure:"fake_collections"`
 	LogLevel                LogLevel `mapstructure:"log_level"`
+}
+
+func (c Config) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("CouchbaseHost", c.CouchbaseHost)
+	enc.AddInt("CouchbaseManagementPort", c.CouchbaseManagementPort)
+	enc.AddString("CouchbaseUsername", c.CouchbaseUsername)
+	enc.AddString("CouchbasePassword", "[PRIVATE]")
+	enc.AddBool("CouchbaseSSL", c.CouchbaseSSL)
+	enc.AddString("Bind", c.Bind)
+	enc.AddBool("FakeCollections", c.FakeCollections)
+	enc.AddString("LogLevel", string(c.LogLevel))
+	return nil
 }
 
 func Read(path string) (*Config, error) {

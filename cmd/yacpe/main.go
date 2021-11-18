@@ -34,7 +34,7 @@ func main() {
 	logger, _ := logCfg.Build()
 	defer logger.Sync()
 
-	logger.Sugar().Debugw("Loaded config", "cfg", cfg)
+	logger.Debug("Loaded config", zap.Object("cfg", cfg))
 
 	toolscommonlog.SetLogger(&config.CBLogZapLogger{Logger: logger.WithOptions(zap.AddCallerSkip(3)).Named("cb").Sugar()})
 	goutilslog.SetLogger(&config.GoUtilsZapLogger{Logger: logger.WithOptions(zap.AddCallerSkip(2)).Named(

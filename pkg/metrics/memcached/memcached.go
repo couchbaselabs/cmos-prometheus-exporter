@@ -12,9 +12,11 @@ import (
 	"go.uber.org/zap"
 	"net"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 type MetricConfig struct {
@@ -92,6 +94,11 @@ func (m *Metrics) Describe(_ chan<- *prometheus.Desc) {
 }
 
 func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
+	start := time.Now()
+	defer func() {
+		end := time.Now()
+		m.logger.Debug("Completed memcached collection, took ", zap.Duration("time", end.Sub(start)))
+	}()
 	m.logger.Debug("Starting memcached collection")
 	m.mux.Lock()
 	defer m.mux.Unlock()
@@ -102,10 +109,12 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 	if err != nil {
 		m.logger.Error("When listing buckets", zap.Error(err))
 	}
+	m.logger.Debug("Raw buckets response", zap.Binary("resp", res.Body))
 	buckets := strings.Split(string(res.Body), " ")
 	if len(buckets) == 1 && buckets[0] == "" {
 		buckets = nil
 	}
+	m.logger.Debug("Got buckets", zap.Strings("buckets", buckets))
 	singletons := make(map[string]struct{})
 	for _, bucket := range buckets {
 		_, err = m.mc.SelectBucket(bucket)
@@ -132,12 +141,10 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 			}
 		}
 	}
-	m.logger.Debug("memcached collection done")
 }
 
 func (m *Metrics) processStatGroup(bucket string, groupName string, vals map[string]string,
-	singletons map[string]struct{}) ([]prometheus.Metric,
-	error) {
+	singletons map[string]struct{}) ([]prometheus.Metric, error) {
 	result := make([]prometheus.Metric, 0, len(m.stats[groupName]))
 	for _, metric := range m.stats[groupName] {
 		// Skip singleton metrics we've already seen
@@ -146,43 +153,158 @@ func (m *Metrics) processStatGroup(bucket string, groupName string, vals map[str
 				continue
 			}
 		}
-		for key, valStr := range vals {
-			if match := metric.exp.FindStringSubmatch(key); match != nil {
-				val, err := strconv.ParseFloat(valStr, 64)
-				if err != nil {
-					return nil, fmt.Errorf("failed to parseFloat for stat %s (val %v): %w", key, val, err)
-				}
-				labelValues := make([]string, len(metric.Labels))
-				for i, label := range metric.Labels {
-					// Check well-known metric names
-					switch label {
-					case "bucket":
-						labelValues[i] = bucket
-					case "scope":
-						fallthrough
-					case "collection":
-						if m.FakeCollections {
-							labelValues[i] = "_default"
-						} else {
-							labelValues[i] = match[metric.exp.SubexpIndex(label)]
-						}
-					default:
-						labelValues[i] = match[metric.exp.SubexpIndex(label)]
-					}
-				}
-				result = append(result, prometheus.MustNewConstMetric(
-					metric.desc,
-					metric.Type.ToPrometheus(),
-					val,
-					labelValues...,
-				))
-				if metric.Singleton {
-					singletons[metric.name] = struct{}{}
-				}
+		var promMetrics []prometheus.Metric
+		var err error
+		switch metric.Type {
+		case common.MetricHistogram:
+			promMetrics, err = m.mapHistogramStat(bucket, vals, metric)
+		default:
+			promMetrics, err = m.mapValueStat(bucket, vals, metric)
+		}
+		if err != nil {
+			m.logger.Warn("Failed to process stat", zap.String("metric", metric.name), zap.Error(err))
+		}
+		if promMetrics != nil {
+			result = append(result, promMetrics...)
+			if metric.Singleton {
+				singletons[metric.name] = struct{}{}
 			}
 		}
 	}
 	return result, nil
+}
+
+func (m *Metrics) mapValueStat(bucket string, statsValues map[string]string,
+	metric *internalStat) ([]prometheus.Metric, error) {
+	for key, valStr := range statsValues {
+		if match := metric.exp.FindStringSubmatch(key); match != nil {
+			val, err := strconv.ParseFloat(valStr, 64)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parseFloat for stat %s (val %v): %w", key, val, err)
+			}
+			labelValues := m.resolveLabelValues(bucket, metric, match)
+			return []prometheus.Metric{prometheus.MustNewConstMetric(
+				metric.desc,
+				metric.Type.ToPrometheus(),
+				val,
+				labelValues...,
+			)}, nil
+		}
+	}
+	return nil, nil
+}
+
+type histogram struct {
+	im      *internalStat
+	labels  []string
+	buckets map[float64]uint64
+	sum     float64
+	count   uint64
+}
+
+func (h *histogram) addReadings(lowerBound, upperBound float64, value uint64) {
+	h.buckets[upperBound] = h.count + value
+	h.count += value
+	h.sum += float64(value) * (upperBound - lowerBound)
+}
+
+func (h histogram) metric() prometheus.Metric {
+	return prometheus.MustNewConstHistogram(
+		h.im.desc,
+		h.count,
+		h.sum,
+		h.buckets,
+		h.labels...,
+	)
+}
+
+func (m *Metrics) mapHistogramStat(bucket string, vals map[string]string, metric *internalStat) ([]prometheus.Metric,
+	error) {
+	matchedKeys := make([]string, 0)
+	for key := range vals {
+		if metric.exp.MatchString(key) {
+			matchedKeys = append(matchedKeys, key)
+		}
+	}
+	if len(matchedKeys) == 0 {
+		return nil, nil
+	}
+
+	sort.Slice(matchedKeys, func(i, j int) bool {
+		lbI, _, err := findBounds(matchedKeys[i])
+		if err != nil {
+			panic(err)
+		}
+		lbJ, _, err := findBounds(matchedKeys[j])
+		if err != nil {
+			panic(err)
+		}
+		return lbI < lbJ
+	})
+
+	histograms := make(map[string]*histogram)
+	for _, key := range matchedKeys {
+		lastUnderscoreIdx := strings.LastIndexByte(key, '_')
+		statName := key[:lastUnderscoreIdx]
+		histo, ok := histograms[statName]
+		if !ok {
+			histo = &histogram{
+				im:      metric,
+				labels:  m.resolveLabelValues(bucket, metric, metric.exp.FindStringSubmatch(key)),
+				buckets: make(map[float64]uint64),
+			}
+			histograms[statName] = histo
+		}
+		lowerBound, upperBound, err := findBounds(key)
+		if err != nil {
+			return nil, err
+		}
+		val, err := strconv.ParseUint(vals[key], 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		histo.addReadings(lowerBound, upperBound, val)
+	}
+
+	results := make([]prometheus.Metric, 0, len(histograms))
+	for _, histo := range histograms {
+		results = append(results, histo.metric())
+	}
+	return results, nil
+}
+
+func findBounds(key string) (float64, float64, error) {
+	lastUnderscoreIdx := strings.LastIndexByte(key, '_')
+	bucketBounds := key[lastUnderscoreIdx+1:]
+	commaIdx := strings.IndexRune(bucketBounds, ',')
+	lowerBound, err := strconv.ParseFloat(bucketBounds[:commaIdx], 64)
+	if err != nil {
+		return 0, 0, err
+	}
+	upperBound, err := strconv.ParseFloat(bucketBounds[commaIdx+1:], 64)
+	return lowerBound, upperBound, err
+}
+
+func (m *Metrics) resolveLabelValues(bucket string, metric *internalStat, match []string) []string {
+	labelValues := make([]string, len(metric.Labels))
+	for i, label := range metric.Labels {
+		// Check well-known metric names
+		switch label {
+		case "bucket":
+			labelValues[i] = bucket
+		case "scope":
+			fallthrough
+		case "collection":
+			if m.FakeCollections {
+				labelValues[i] = "_default"
+			} else {
+				labelValues[i] = match[metric.exp.SubexpIndex(label)]
+			}
+		default:
+			labelValues[i] = match[metric.exp.SubexpIndex(label)]
+		}
+	}
+	return labelValues
 }
 
 func (m *Metrics) Close() error {

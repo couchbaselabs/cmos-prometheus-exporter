@@ -68,6 +68,12 @@
       "pattern": "^vb_(?P<state>.+?)_perc_mem_resident$",
       "labels": ["bucket", "state"],
       "type": "gauge"
+    },
+    "kv_cmd_duration_seconds": {
+      "group": "timings",
+      "pattern": "^(?P<opcode>[a-z_]+)_cmd_[0-9]+,[0-9]+$",
+      "labels": ["bucket", "opcode"],
+      "type": "histogram"
     }
   },
   "gsi": {
@@ -75,7 +81,7 @@
       "name": "data_size"
     },
     "index_data_size": {
-      "name": "index_data_size"
+      "name": "data_size"
     },
     "index_items_count": {
       "name": "items_count"
@@ -84,7 +90,7 @@
       "name": "total_scan_duration"
     },
     "index_memory_used_total": {
-      "name": "memory_used_total",
+      "name": "memory_used",
       "global": true
     },
     "index_memory_quota": {

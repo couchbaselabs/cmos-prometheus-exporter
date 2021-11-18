@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"sync"
+	"time"
 )
 
 type Metric struct {
@@ -57,6 +58,11 @@ func (m *Metrics) Describe(descs chan<- *prometheus.Desc) {
 }
 
 func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
+	start := time.Now()
+	defer func() {
+		end := time.Now()
+		m.logger.Debug("Completed N1QL collection, took ", zap.Duration("time", end.Sub(start)))
+	}()
 	m.logger.Debug("Starting N1QL collection")
 	m.mux.Lock()
 	defer m.mux.Unlock()
