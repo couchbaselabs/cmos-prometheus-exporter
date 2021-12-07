@@ -32,12 +32,13 @@ type MetricConfig struct {
 	ConstLabels prometheus.Labels `json:"constLabels"`
 	// Help is the help string to add to the emitted Prometheus metric.
 	Help string `json:"help,omitempty"`
-	// Type is the type of metric to emit (counter, gauge, untyped). Defaults to untyped.
+	// Type is the type of metric to emit (counter, gauge, histogram, untyped). Defaults to untyped.
 	Type common.MetricType `json:"type"`
 	// Singleton should be `true` for metrics that should only be emitted once.
 	// This is necessary because the memcached protocol only allows gathering stats in the context of a bucket,
 	// even for stats that are global.
-	Singleton bool `json:"singleton"`
+	Singleton       bool      `json:"singleton"`
+	ResampleBuckets []float64 `json:"resampleBuckets"`
 }
 
 // MetricConfigs allows a JSON metric config to be either an object or an array.
@@ -194,30 +195,6 @@ func (m *Metrics) mapValueStat(bucket string, statsValues map[string]string,
 	return nil, nil
 }
 
-type histogram struct {
-	im      *internalStat
-	labels  []string
-	buckets map[float64]uint64
-	sum     float64
-	count   uint64
-}
-
-func (h *histogram) addReadings(lowerBound, upperBound float64, value uint64) {
-	h.buckets[upperBound] = h.count + value
-	h.count += value
-	h.sum += float64(value) * (upperBound - lowerBound)
-}
-
-func (h histogram) metric() prometheus.Metric {
-	return prometheus.MustNewConstHistogram(
-		h.im.desc,
-		h.count,
-		h.sum,
-		h.buckets,
-		h.labels...,
-	)
-}
-
 func (m *Metrics) mapHistogramStat(bucket string, vals map[string]string, metric *internalStat) ([]prometheus.Metric,
 	error) {
 	matchedKeys := make([]string, 0)
@@ -263,17 +240,20 @@ func (m *Metrics) mapHistogramStat(bucket string, vals map[string]string, metric
 		if err != nil {
 			return nil, err
 		}
-		histo.addReadings(lowerBound, upperBound, val)
+		histo.addReadings(lowerBound.Seconds(), upperBound.Seconds(), val)
 	}
 
 	results := make([]prometheus.Metric, 0, len(histograms))
 	for _, histo := range histograms {
+		if len(metric.ResampleBuckets) > 0 {
+			histo.resample(metric.ResampleBuckets)
+		}
 		results = append(results, histo.metric())
 	}
 	return results, nil
 }
 
-func findBounds(key string) (float64, float64, error) {
+func findBounds(key string) (time.Duration, time.Duration, error) {
 	lastUnderscoreIdx := strings.LastIndexByte(key, '_')
 	bucketBounds := key[lastUnderscoreIdx+1:]
 	commaIdx := strings.IndexRune(bucketBounds, ',')
@@ -282,7 +262,7 @@ func findBounds(key string) (float64, float64, error) {
 		return 0, 0, err
 	}
 	upperBound, err := strconv.ParseFloat(bucketBounds[commaIdx+1:], 64)
-	return lowerBound, upperBound, err
+	return time.Duration(lowerBound) * time.Microsecond, time.Duration(upperBound) * time.Microsecond, err
 }
 
 func (m *Metrics) resolveLabelValues(bucket string, metric *internalStat, match []string) []string {
