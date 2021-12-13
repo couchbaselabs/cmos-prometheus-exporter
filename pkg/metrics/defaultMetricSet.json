@@ -122,12 +122,28 @@
       "name": "memory_used",
       "global": true
     },
+    "index_memory_used": {
+      "name": "memory_used",
+      "global": true
+    },
     "index_memory_quota": {
       "name": "memory_quota",
       "global": true
     },
     "index_avg_scan_latency": {
       "name": "avg_scan_latency"
+    },
+    "index_resident_percent": {
+      "name": "resident_percent"
+    },
+    "index_data_size_on_disk": {
+      "name": "disk_size"
+    },
+    "index_num_requests": {
+      "name": "num_requests"
+    },
+    "index_num_docs_pending": {
+      "name": "num_docs_pending"
     }
   },
   "n1ql": {
