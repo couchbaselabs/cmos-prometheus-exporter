@@ -80,7 +80,7 @@ exports.default = async function(config) {
 exports.formatMarkdown = function(results, commit = null) {
     // console.log(results)
     const { coverage, accuracy, covered, accurate, totalBase, issues, missing, extra } = results;
-    return `**Comparison Results**${commit === null ? "" : `as of commit \`${commit}\``}:
+    return `**Comparison Results**${commit === null ? "" : ` as of commit \`${commit}\``}:
 
 Coverage: ${covered}/${totalBase} (${(coverage * 100).toFixed(2)}%)
 
