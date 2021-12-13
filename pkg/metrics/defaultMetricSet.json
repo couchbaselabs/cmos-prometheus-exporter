@@ -123,8 +123,7 @@
       "global": true
     },
     "index_memory_used": {
-      "name": "memory_used",
-      "global": true
+      "name": "memory_used"
     },
     "index_memory_quota": {
       "name": "memory_quota",

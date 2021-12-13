@@ -43,4 +43,6 @@ function wait_for_url() {
 
 wait_for_url 30 "http://cb6:8091/ui"
 
+sleep 10
+
 exec /yacpe
