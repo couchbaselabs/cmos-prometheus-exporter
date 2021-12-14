@@ -31,11 +31,20 @@ func (c Config) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 }
 
 func Read(path string) (*Config, error) {
-
-	viper.SetDefault("Bind", ":9091")
+	viper.SetDefault("couchbase_host", "localhost")
+	viper.SetDefault("couchbase_management_port", 8091)
+	viper.SetDefault("bind", ":9091")
+	viper.SetDefault("fake_collections", true)
+	viper.SetDefault("log_level", "info")
 
 	viper.SetConfigName("yacpe")
 	viper.SetConfigType("yaml")
+
+	viper.SetEnvPrefix("YACPE")
+	viper.AutomaticEnv()
+
+	_ = viper.BindEnv("couchbase_username", "COUCHBASE_OPERATOR_USER", "YACPE_COUCHBASE_USERNAME")
+	_ = viper.BindEnv("couchbase_password", "COUCHBASE_OPERATOR_PASS", "YACPE_COUCHBASE_PASSWORD")
 
 	if path != "" {
 		file, err := os.Open(path)
