@@ -53,19 +53,24 @@ func Read(path string) (*Config, error) {
 		}
 		defer file.Close()
 		if err := viper.ReadConfig(file); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read non-default config: %w", err)
 		}
 	} else {
 		viper.AddConfigPath("/etc/yacpe")
 		viper.AddConfigPath("$HOME/.yacpe")
 		viper.AddConfigPath(".")
 		if err := viper.ReadInConfig(); err != nil {
-			return nil, err
+			if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+				return nil, fmt.Errorf("failed to read default config paths: %w", err)
+			}
 		}
 	}
 
 	var cfg Config
 	err := viper.Unmarshal(&cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+	}
 
-	return &cfg, err
+	return &cfg, nil
 }
