@@ -8,11 +8,12 @@ import (
 	"github.com/markspolakovs/yacpe/pkg/config"
 	"github.com/markspolakovs/yacpe/pkg/couchbase"
 	"github.com/markspolakovs/yacpe/pkg/metrics"
-	gsi "github.com/markspolakovs/yacpe/pkg/metrics/gsi"
+	"github.com/markspolakovs/yacpe/pkg/metrics/gsi"
 	"github.com/markspolakovs/yacpe/pkg/metrics/memcached"
 	"github.com/markspolakovs/yacpe/pkg/metrics/n1ql"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	jww "github.com/spf13/jwalterweatherman"
 	"go.uber.org/zap"
 	"log"
 	"net/http"
@@ -22,6 +23,10 @@ var flagConfigPath = flag.String("config-file", "", "path to read config from (l
 
 func main() {
 	flag.Parse()
+
+	// Set up JWW (used by Viper).
+	// Sadly this won't get us nice JSON logging :(
+	jww.SetStdoutThreshold(jww.LevelTrace)
 
 	cfg, err := config.Read(*flagConfigPath)
 	if err != nil {
