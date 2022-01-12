@@ -36,12 +36,12 @@ type Metrics struct {
 	ms MetricSet
 	// Note: this is keyed by n1ql name, NOT prometheus name
 	msi    metricSetInternal
-	node   *couchbase.Node
+	node   couchbase.NodeCommon
 	mux    sync.Mutex
 	logger *zap.Logger
 }
 
-func NewMetrics(logger *zap.SugaredLogger, node *couchbase.Node, cfg *config.Config, ms MetricSet) (*Metrics, error) {
+func NewMetrics(logger *zap.SugaredLogger, node couchbase.NodeCommon, cfg *config.Config, ms MetricSet) (*Metrics, error) {
 	ret := &Metrics{
 		node:   node,
 		msi:    make(metricSetInternal),

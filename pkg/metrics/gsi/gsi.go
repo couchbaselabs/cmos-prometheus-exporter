@@ -32,7 +32,7 @@ type metricInternal struct {
 type metricSetInternal map[string]*metricInternal
 
 type Metrics struct {
-	node   *couchbase.Node
+	node   couchbase.NodeCommon
 	msi    metricSetInternal
 	mux    sync.Mutex
 	cfg    *config.Config
@@ -123,7 +123,7 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 	m.logger.Debug("GSI collection done")
 }
 
-func NewMetrics(logger *zap.SugaredLogger, node *couchbase.Node, cfg *config.Config, ms MetricSet) (*Metrics, error) {
+func NewMetrics(logger *zap.SugaredLogger, node couchbase.NodeCommon, cfg *config.Config, ms MetricSet) (*Metrics, error) {
 	ret := &Metrics{
 		node:   node,
 		cfg:    cfg,

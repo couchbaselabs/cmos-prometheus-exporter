@@ -11,13 +11,17 @@ import (
 )
 
 type Node struct {
-	Hostname   string
+	hostname   string
 	creds      aprov.Provider
 	rest       *cbrest.Client
 	ccm        *cbrest.ClusterConfigManager
 	pollCtx    context.Context
 	pollCancel context.CancelFunc
 	logger     *zap.SugaredLogger
+}
+
+func (n *Node) Hostname() string {
+	return n.hostname
 }
 
 func (n *Node) Close() error {
@@ -43,7 +47,7 @@ func BootstrapNode(logger *zap.SugaredLogger, node, username, password string, m
 		return nil, err
 	}
 	return &Node{
-		Hostname: node,
+		hostname: node,
 		rest:     client,
 		creds:    creds,
 		ccm:      cbrest.NewClusterConfigManager(),

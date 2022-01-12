@@ -77,7 +77,7 @@ type internalStatsMap map[string][]*internalStat
 
 type Metrics struct {
 	FakeCollections bool
-	node            *couchbase.Node
+	node            couchbase.NodeCommon
 	hostPort        string
 	stats           internalStatsMap
 	mc              *memcached.Client
@@ -291,12 +291,12 @@ func (m *Metrics) Close() error {
 	return m.mc.Close()
 }
 
-func NewMemcachedMetrics(logger *zap.Logger, node *couchbase.Node, metricSet MetricSet) (*Metrics, error) {
+func NewMemcachedMetrics(logger *zap.Logger, node couchbase.NodeCommon, metricSet MetricSet) (*Metrics, error) {
 	kvPort, err := node.GetServicePort(cbrest.ServiceData)
 	if err != nil {
 		return nil, err
 	}
-	hostPort := net.JoinHostPort(node.Hostname, strconv.Itoa(kvPort))
+	hostPort := net.JoinHostPort(node.Hostname(), strconv.Itoa(kvPort))
 	logger.Debug("Connecting to", zap.String("hostPort", hostPort))
 	mc, err := memcached.Connect("tcp", hostPort)
 	if err != nil {
