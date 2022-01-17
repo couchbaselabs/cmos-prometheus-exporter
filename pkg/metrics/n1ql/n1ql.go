@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/couchbase/tools-common/cbrest"
-	"github.com/markspolakovs/yacpe/pkg/config"
 	"github.com/markspolakovs/yacpe/pkg/couchbase"
 	"github.com/markspolakovs/yacpe/pkg/metrics/common"
 	"github.com/prometheus/client_golang/prometheus"
@@ -41,7 +40,7 @@ type Metrics struct {
 	logger *zap.Logger
 }
 
-func NewMetrics(logger *zap.SugaredLogger, node couchbase.NodeCommon, cfg *config.Config, ms MetricSet) (*Metrics, error) {
+func NewMetrics(logger *zap.SugaredLogger, node couchbase.NodeCommon, ms MetricSet) (*Metrics, error) {
 	ret := &Metrics{
 		node:   node,
 		msi:    make(metricSetInternal),

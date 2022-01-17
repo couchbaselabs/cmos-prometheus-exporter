@@ -64,6 +64,7 @@ func main() {
 			logger.Sugar().Fatalw("Failed to create memcached collector", "err", err)
 		}
 		defer mc.Close()
+		mc.FakeCollections = cfg.FakeCollections
 		reg.MustRegister(mc)
 	}
 
@@ -72,10 +73,11 @@ func main() {
 		logger.Sugar().Fatalw("Failed to check GSI", "err", err)
 	}
 	if hasGSI {
-		gsiCollector, err := gsi.NewMetrics(logger.Sugar().Named("gsi"), node, cfg, ms.GSI)
+		gsiCollector, err := gsi.NewMetrics(logger.Sugar().Named("gsi"), node, ms.GSI)
 		if err != nil {
 			logger.Sugar().Fatalw("Failed to create GSI collector", "err", err)
 		}
+		gsiCollector.FakeCollections = cfg.FakeCollections
 		reg.MustRegister(gsiCollector)
 	}
 
@@ -84,7 +86,7 @@ func main() {
 		logger.Sugar().Fatalw("Failed to check N1QL", "err", err)
 	}
 	if hasN1QL {
-		n1qlCollector, err := n1ql.NewMetrics(logger.Sugar().Named("n1ql"), node, cfg, ms.N1QL)
+		n1qlCollector, err := n1ql.NewMetrics(logger.Sugar().Named("n1ql"), node, ms.N1QL)
 		if err != nil {
 			logger.Sugar().Fatalw("Failed to create N1QL collector", "err", err)
 		}

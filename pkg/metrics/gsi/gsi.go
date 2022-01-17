@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/couchbase/tools-common/cbrest"
-	"github.com/markspolakovs/yacpe/pkg/config"
 	"github.com/markspolakovs/yacpe/pkg/couchbase"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
@@ -32,11 +31,11 @@ type metricInternal struct {
 type metricSetInternal map[string]*metricInternal
 
 type Metrics struct {
-	node   couchbase.NodeCommon
-	msi    metricSetInternal
-	mux    sync.Mutex
-	cfg    *config.Config
-	logger *zap.SugaredLogger
+	node            couchbase.NodeCommon
+	msi             metricSetInternal
+	mux             sync.Mutex
+	logger          *zap.SugaredLogger
+	FakeCollections bool
 }
 
 func (m *Metrics) Describe(descs chan<- *prometheus.Desc) {
@@ -96,7 +95,7 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 				"bucket": parts[0],
 				"index":  parts[1],
 			}
-			if m.cfg.FakeCollections {
+			if m.FakeCollections {
 				labels["scope"] = "_default"
 				labels["collection"] = "_default"
 			}
@@ -123,10 +122,10 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 	m.logger.Debug("GSI collection done")
 }
 
-func NewMetrics(logger *zap.SugaredLogger, node couchbase.NodeCommon, cfg *config.Config, ms MetricSet) (*Metrics, error) {
+func NewMetrics(logger *zap.SugaredLogger, node couchbase.NodeCommon, ms MetricSet) (*Metrics,
+	error) {
 	ret := &Metrics{
 		node:   node,
-		cfg:    cfg,
 		msi:    make(metricSetInternal),
 		logger: logger,
 	}
@@ -143,7 +142,7 @@ func (m *Metrics) updateMetricSet(ms MetricSet) {
 		if !ok {
 			var labels []string
 			if !metric.Global {
-				if m.cfg.FakeCollections {
+				if m.FakeCollections {
 					labels = []string{"bucket", "scope", "collection", "index"}
 				} else {
 					labels = []string{"bucket", "index"}
@@ -197,7 +196,7 @@ func (m *Metrics) getMetricsFor(values map[string]interface{}, labels prometheus
 		}
 		var labelValues []string
 		if !metric.global {
-			if m.cfg.FakeCollections {
+			if m.FakeCollections {
 				labelValues = []string{labels["bucket"], labels["scope"], labels["collection"], labels["index"]}
 			} else {
 				labelValues = []string{labels["bucket"], labels["index"]}
