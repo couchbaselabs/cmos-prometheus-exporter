@@ -64,7 +64,8 @@ func main() {
 			logger.Sugar().Fatalw("Failed to create memcached collector", "err", err)
 		}
 		defer mc.Close()
-		mc.FakeCollections = cfg.FakeCollections
+		// TODO: we need to add scope/collection labels to the various metrics
+		// mc.FakeCollections = cfg.FakeCollections
 		reg.MustRegister(mc)
 	}
 
@@ -73,11 +74,10 @@ func main() {
 		logger.Sugar().Fatalw("Failed to check GSI", "err", err)
 	}
 	if hasGSI {
-		gsiCollector, err := gsi.NewMetrics(logger.Sugar().Named("gsi"), node, ms.GSI)
+		gsiCollector, err := gsi.NewMetrics(logger.Sugar().Named("gsi"), node, ms.GSI, cfg.FakeCollections)
 		if err != nil {
 			logger.Sugar().Fatalw("Failed to create GSI collector", "err", err)
 		}
-		gsiCollector.FakeCollections = cfg.FakeCollections
 		reg.MustRegister(gsiCollector)
 	}
 

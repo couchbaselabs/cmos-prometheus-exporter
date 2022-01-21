@@ -35,7 +35,7 @@ type Metrics struct {
 	msi             metricSetInternal
 	mux             sync.Mutex
 	logger          *zap.SugaredLogger
-	FakeCollections bool
+	fakeCollections bool
 }
 
 func (m *Metrics) Describe(descs chan<- *prometheus.Desc) {
@@ -95,7 +95,7 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 				"bucket": parts[0],
 				"index":  parts[1],
 			}
-			if m.FakeCollections {
+			if m.fakeCollections {
 				labels["scope"] = "_default"
 				labels["collection"] = "_default"
 			}
@@ -122,12 +122,13 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 	m.logger.Debug("GSI collection done")
 }
 
-func NewMetrics(logger *zap.SugaredLogger, node couchbase.NodeCommon, ms MetricSet) (*Metrics,
+func NewMetrics(logger *zap.SugaredLogger, node couchbase.NodeCommon, ms MetricSet, fakeCollections bool) (*Metrics,
 	error) {
 	ret := &Metrics{
-		node:   node,
-		msi:    make(metricSetInternal),
-		logger: logger,
+		node:            node,
+		msi:             make(metricSetInternal),
+		logger:          logger,
+		fakeCollections: fakeCollections,
 	}
 	ret.updateMetricSet(ms)
 	return ret, nil
@@ -142,7 +143,7 @@ func (m *Metrics) updateMetricSet(ms MetricSet) {
 		if !ok {
 			var labels []string
 			if !metric.Global {
-				if m.FakeCollections {
+				if m.fakeCollections {
 					labels = []string{"bucket", "scope", "collection", "index"}
 				} else {
 					labels = []string{"bucket", "index"}
@@ -196,12 +197,14 @@ func (m *Metrics) getMetricsFor(values map[string]interface{}, labels prometheus
 		}
 		var labelValues []string
 		if !metric.global {
-			if m.FakeCollections {
+			if m.fakeCollections {
 				labelValues = []string{labels["bucket"], labels["scope"], labels["collection"], labels["index"]}
 			} else {
 				labelValues = []string{labels["bucket"], labels["index"]}
 			}
 		}
+		m.logger.Desugar().Debug("Mapped metric", zap.String("gsiName", key), zap.String("desc", metric.desc.String()),
+			zap.Strings("labels", labelValues))
 		result = append(result, prometheus.MustNewConstMetric(metric.desc, prometheus.GaugeValue, value, labelValues...))
 	}
 	return result, nil

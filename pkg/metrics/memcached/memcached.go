@@ -110,7 +110,6 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 	if err != nil {
 		m.logger.Error("When listing buckets", zap.Error(err))
 	}
-	m.logger.Debug("Raw buckets response", zap.Binary("resp", res.Body))
 	buckets := strings.Split(string(res.Body), " ")
 	if len(buckets) == 1 && buckets[0] == "" {
 		buckets = nil
@@ -177,6 +176,7 @@ func (m *Metrics) processStatGroup(bucket string, groupName string, vals map[str
 
 func (m *Metrics) mapValueStat(bucket string, statsValues map[string]string,
 	metric *internalStat) ([]prometheus.Metric, error) {
+	result := make([]prometheus.Metric, 0)
 	for key, valStr := range statsValues {
 		if match := metric.exp.FindStringSubmatch(key); match != nil {
 			val, err := strconv.ParseFloat(valStr, 64)
@@ -184,15 +184,17 @@ func (m *Metrics) mapValueStat(bucket string, statsValues map[string]string,
 				return nil, fmt.Errorf("failed to parseFloat for stat %s (val %v): %w", key, val, err)
 			}
 			labelValues := m.resolveLabelValues(bucket, metric, match)
-			return []prometheus.Metric{prometheus.MustNewConstMetric(
+			m.logger.Debug("Mapped metric", zap.String("memcached_name", key), zap.String("prom_name", metric.name),
+				zap.Strings("labels", labelValues))
+			result = append(result, prometheus.MustNewConstMetric(
 				metric.desc,
 				metric.Type.ToPrometheus(),
 				val,
 				labelValues...,
-			)}, nil
+			))
 		}
 	}
-	return nil, nil
+	return result, nil
 }
 
 func (m *Metrics) mapHistogramStat(bucket string, vals map[string]string, metric *internalStat) ([]prometheus.Metric,

@@ -65,7 +65,7 @@
     ],
     "kv_vb_perc_mem_resident_ratio": {
       "group": "",
-      "pattern": "^vb_(?P<state>.+?)_perc_mem_resident$",
+      "pattern": "^vb_(?P<state>active|replica|dead|pending)_perc_mem_resident$",
       "labels": ["bucket", "state"],
       "type": "gauge"
     },
