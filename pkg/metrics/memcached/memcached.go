@@ -109,6 +109,11 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 	})
 	if err != nil {
 		m.logger.Error("When listing buckets", zap.Error(err))
+		return
+	}
+	if res == nil {
+		m.logger.Error("Memcached gave nil response to ListBuckets")
+		return
 	}
 	buckets := strings.Split(string(res.Body), " ")
 	if len(buckets) == 1 && buckets[0] == "" {
@@ -270,20 +275,37 @@ func findBounds(key string) (time.Duration, time.Duration, error) {
 func (m *Metrics) resolveLabelValues(bucket string, metric *internalStat, match []string) []string {
 	labelValues := make([]string, len(metric.Labels))
 	for i, label := range metric.Labels {
+		transformFn := func(s string) string {
+			return s
+		}
+		if strings.ContainsRune(label, ':') {
+			parts := strings.SplitN(label, ":", 2)
+			label = parts[0]
+			switch parts[1] {
+			case "uppercase":
+				transformFn = strings.ToUpper
+			case "lowercase":
+				transformFn = strings.ToLower
+			default:
+				m.logger.DPanic("Unknown label transformer",
+					zap.String("transform", parts[1]),
+					zap.String("label", label))
+			}
+		}
 		// Check well-known metric names
 		switch label {
 		case "bucket":
-			labelValues[i] = bucket
+			labelValues[i] = transformFn(bucket)
 		case "scope":
 			fallthrough
 		case "collection":
 			if m.FakeCollections {
-				labelValues[i] = "_default"
+				labelValues[i] = transformFn("_default")
 			} else {
-				labelValues[i] = match[metric.exp.SubexpIndex(label)]
+				labelValues[i] = transformFn(match[metric.exp.SubexpIndex(label)])
 			}
 		default:
-			labelValues[i] = match[metric.exp.SubexpIndex(label)]
+			labelValues[i] = transformFn(match[metric.exp.SubexpIndex(label)])
 		}
 	}
 	return labelValues
@@ -333,11 +355,20 @@ func (m *Metrics) updateMetricSet(ms MetricSet) error {
 			if err != nil {
 				return err
 			}
+			labels := make([]string, len(val.Labels))
+			for i, label := range val.Labels {
+				if strings.ContainsRune(label, ':') {
+					parts := strings.SplitN(label, ":", 2)
+					labels[i] = parts[0]
+				} else {
+					labels[i] = label
+				}
+			}
 			stat := internalStat{
 				MetricConfig: val,
 				name:         metric,
 				exp:          exp,
-				desc:         prometheus.NewDesc(metric, val.Help, val.Labels, val.ConstLabels),
+				desc:         prometheus.NewDesc(metric, val.Help, labels, val.ConstLabels),
 			}
 
 			// We can do this, since append(nil) will automatically make()

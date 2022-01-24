@@ -72,7 +72,7 @@
     "kv_cmd_duration_seconds": {
       "group": "timings",
       "pattern": "^(?P<opcode>[a-z_]+)_cmd_[0-9]+,[0-9]+$",
-      "labels": ["bucket", "opcode"],
+      "labels": ["bucket", "opcode:uppercase"],
       "type": "histogram",
       "resampleBuckets": [
         0.000001,
