@@ -3,15 +3,17 @@ package n1ql
 import (
 	"context"
 	"encoding/json"
-	"github.com/couchbase/tools-common/cbrest"
-	"github.com/markspolakovs/yacpe/pkg/couchbase"
-	"github.com/markspolakovs/yacpe/pkg/metrics/common"
-	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
 	"io/ioutil"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/couchbase/tools-common/cbrest"
+	"github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/zap"
+
+	"github.com/markspolakovs/yacpe/pkg/couchbase"
+	"github.com/markspolakovs/yacpe/pkg/metrics/common"
 )
 
 type Metric struct {

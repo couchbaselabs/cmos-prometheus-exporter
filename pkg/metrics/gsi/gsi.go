@@ -4,15 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/couchbase/tools-common/cbrest"
-	"github.com/markspolakovs/yacpe/pkg/couchbase"
-	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/couchbase/tools-common/cbrest"
+	"github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/zap"
+
+	"github.com/markspolakovs/yacpe/pkg/couchbase"
 )
 
 type Metric struct {

@@ -2,9 +2,10 @@ package config
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/spf13/viper"
 	"go.uber.org/zap/zapcore"
-	"os"
 )
 
 type Config struct {
@@ -46,6 +47,7 @@ func Read(path string) (*Config, error) {
 	_ = viper.BindEnv("couchbase_username", "COUCHBASE_OPERATOR_USER", "YACPE_COUCHBASE_USERNAME")
 	_ = viper.BindEnv("couchbase_password", "COUCHBASE_OPERATOR_PASS", "YACPE_COUCHBASE_PASSWORD")
 
+	//nolint:nestif
 	if path != "" {
 		file, err := os.Open(path)
 		if err != nil {
@@ -67,8 +69,7 @@ func Read(path string) (*Config, error) {
 	}
 
 	var cfg Config
-	err := viper.Unmarshal(&cfg)
-	if err != nil {
+	if err := viper.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 

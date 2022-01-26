@@ -4,7 +4,9 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+
 	"github.com/creasty/defaults"
+
 	"github.com/markspolakovs/yacpe/pkg/metrics/gsi"
 	"github.com/markspolakovs/yacpe/pkg/metrics/memcached"
 	"github.com/markspolakovs/yacpe/pkg/metrics/n1ql"

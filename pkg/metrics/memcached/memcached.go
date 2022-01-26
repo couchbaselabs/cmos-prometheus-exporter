@@ -3,13 +3,6 @@ package memcached
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/couchbase/gomemcached"
-	memcached "github.com/couchbase/gomemcached/client"
-	"github.com/couchbase/tools-common/cbrest"
-	"github.com/markspolakovs/yacpe/pkg/couchbase"
-	"github.com/markspolakovs/yacpe/pkg/metrics/common"
-	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
 	"net"
 	"regexp"
 	"sort"
@@ -17,6 +10,15 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/couchbase/gomemcached"
+	memcached "github.com/couchbase/gomemcached/client"
+	"github.com/couchbase/tools-common/cbrest"
+	"github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/zap"
+
+	"github.com/markspolakovs/yacpe/pkg/couchbase"
+	"github.com/markspolakovs/yacpe/pkg/metrics/common"
 )
 
 type MetricConfig struct {

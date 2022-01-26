@@ -1,9 +1,10 @@
 package memcached
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
 	"math"
 	"sort"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type histogram struct {

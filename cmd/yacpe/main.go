@@ -2,21 +2,23 @@ package main
 
 import (
 	"flag"
+	"log"
+	"net/http"
+
 	goutilslog "github.com/couchbase/goutils/logging"
 	"github.com/couchbase/tools-common/cbrest"
 	toolscommonlog "github.com/couchbase/tools-common/log"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	jww "github.com/spf13/jwalterweatherman"
+	"go.uber.org/zap"
+
 	"github.com/markspolakovs/yacpe/pkg/config"
 	"github.com/markspolakovs/yacpe/pkg/couchbase"
 	"github.com/markspolakovs/yacpe/pkg/metrics"
 	"github.com/markspolakovs/yacpe/pkg/metrics/gsi"
 	"github.com/markspolakovs/yacpe/pkg/metrics/memcached"
 	"github.com/markspolakovs/yacpe/pkg/metrics/n1ql"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	jww "github.com/spf13/jwalterweatherman"
-	"go.uber.org/zap"
-	"log"
-	"net/http"
 )
 
 var flagConfigPath = flag.String("config-file", "", "path to read config from (leave blank to use defaults)")

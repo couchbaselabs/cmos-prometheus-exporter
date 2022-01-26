@@ -1,0 +1,79 @@
+linters:
+  # Enable all available linters.
+  enable-all: true
+  # Disable specific linter
+  # https://golangci-lint.run/usage/linters/#disabled-by-default-linters--e--enable
+  disable:
+    - asciicheck
+    - bodyclose
+    - contextcheck
+    - cyclop
+    - deadcode
+    - depguard
+    - dupl
+    - errcheck
+    - errname
+    - errorlint
+    - exhaustive
+    - exhaustivestruct
+    - exportloopref
+    - forbidigo
+    - forcetypeassert
+    - funlen
+    - gci
+    - gochecknoglobals
+    - gochecknoinits
+    - gocognit
+    - gocritic
+    - gocyclo
+    - godot
+    - godox
+    - goerr113
+    - gofmt
+    - goheader
+    - goimports
+    - golint
+    - gomnd
+    - gomoddirectives
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - govet
+    - importas
+    - interfacer
+    - ireturn
+    - lll
+    - maligned
+    - misspell
+    - nakedret
+    - nilerr
+    - nlreturn
+    - noctx
+    - paralleltest
+    - promlinter
+    - rowserrcheck
+    - scopelint
+    - sqlclosecheck
+    - staticcheck
+    - structcheck
+    - stylecheck
+    - tagliatelle
+    - testpackage
+    - unconvert
+    - unparam
+    - unused
+    - varcheck
+    - varnamelen
+    - wastedassign
+    - wrapcheck
+    - wsl
+
+linters-settings:
+  nestif:
+    min-complexity: 6
+  errcheck:
+    exclude-functions:
+      - (*go.uber.org/zap.Logger).Sync
+  goimports:
+    local-prefixes: github.com/markspolakovs/yacpe

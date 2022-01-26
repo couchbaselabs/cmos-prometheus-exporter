@@ -4,20 +4,19 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+
 	"github.com/couchbase/tools-common/aprov"
 	"github.com/couchbase/tools-common/cbrest"
 	"go.uber.org/zap"
-	"io/ioutil"
 )
 
 type Node struct {
-	hostname   string
-	creds      aprov.Provider
-	rest       *cbrest.Client
-	ccm        *cbrest.ClusterConfigManager
-	pollCtx    context.Context
-	pollCancel context.CancelFunc
-	logger     *zap.SugaredLogger
+	hostname string
+	creds    aprov.Provider
+	rest     *cbrest.Client
+	ccm      *cbrest.ClusterConfigManager
+	logger   *zap.SugaredLogger
 }
 
 func (n *Node) Hostname() string {
@@ -25,7 +24,6 @@ func (n *Node) Hostname() string {
 }
 
 func (n *Node) Close() error {
-	n.pollCancel()
 	n.rest.Close()
 	return nil
 }
@@ -83,18 +81,6 @@ func (n *Node) updateClusterConfig() error {
 	}
 	result.FilterOtherNodes()
 	return n.ccm.Update(&result)
-}
-
-func (n *Node) pollClusterConfig() {
-	for {
-		n.ccm.WaitUntilExpired(n.pollCtx)
-		if n.pollCtx.Err() != nil {
-			return
-		}
-		if err := n.updateClusterConfig(); err != nil {
-			n.logger.Fatalw("Failed to update cluster config", "err", err)
-		}
-	}
 }
 
 func (n *Node) GetServicePort(service cbrest.Service) (int, error) {
