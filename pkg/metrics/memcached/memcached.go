@@ -21,6 +21,15 @@ import (
 	"github.com/markspolakovs/yacpe/pkg/metrics/common"
 )
 
+func init() {
+	// gomemcached doesn't have names for these commands
+	gomemcached.CommandNames[gomemcached.GET_META] = "GET_META"
+	gomemcached.CommandNames[gomemcached.SET_WITH_META] = "SET_WITH_META"
+	gomemcached.CommandNames[gomemcached.ADD_WITH_META] = "ADD_WITH_META"
+	gomemcached.CommandNames[gomemcached.DELETE_WITH_META] = "DELETE_WITH_META"
+	gomemcached.CommandNames[gomemcached.SET_VBUCKET] = "SET_VBUCKET"
+}
+
 type MetricConfig struct {
 	// Group is the memcached stats group that this stat comes from - which may be a blank string.
 	Group string `json:"group"`
@@ -40,7 +49,7 @@ type MetricConfig struct {
 	// For example, it can be used to fix values that are milliseconds in 6.0 but seconds in 7.0,
 	// by setting a multiplier of 0.001.
 	// If unset, defaults to 1 (no change).
-	// NOTE: Multiplier is not currently applied to histograms.
+	// NOTE: for histograms, the multiplier is applied to the *bounds*, not the values.
 	Multiplier float64 `json:"multiplier"`
 	// Singleton should be `true` for metrics that should only be emitted once.
 	// This is necessary because the memcached protocol only allows gathering stats in the context of a bucket,
@@ -72,8 +81,38 @@ func (m *MetricConfigs) UnmarshalJSON(bytes []byte) error {
 	}
 }
 
+type mcOpcode struct {
+	code gomemcached.CommandCode
+	name string
+}
+
+func (m *mcOpcode) UnmarshalJSON(bytes []byte) error {
+	var name string
+	if err := json.Unmarshal(bytes, &name); err != nil {
+		return err
+	}
+	for code, opName := range gomemcached.CommandNames {
+		if opName == name {
+			m.code = code
+			m.name = name
+			return nil
+		}
+	}
+	return fmt.Errorf("unknown memcached opcode %s", name)
+}
+
+type commandTimingMetricConfig struct {
+	Opcodes []mcOpcode `json:"opcodes"`
+	desc    *prometheus.Desc
+}
+
 // MetricSet is a mapping of Prometheus metric names to MetricConfigs.
-type MetricSet map[string]MetricConfigs
+type MetricSet struct {
+	Stats map[string]MetricConfigs `json:"stats"`
+	// CommandTimings is the configuration for generating the kv_cmd_duration_seconds histogram.
+	// It is a special case, as it requires different processing to the other memcached stats.
+	CommandTimings *commandTimingMetricConfig `json:"commandTimings"`
+}
 
 type internalStat struct {
 	MetricConfig
@@ -86,11 +125,19 @@ type internalStat struct {
 // internalStatsMap is a map of Memcached STAT groups to metrics.
 type internalStatsMap map[string][]*internalStat
 
+type commandTimingsResponse struct {
+	BucketsLow float64 `json:"bucketsLow"`
+	// Values are [upper bound, ops, percentile]
+	Data  [][3]float64 `json:"data"`
+	Total float64      `json:"total"`
+}
+
 type Metrics struct {
 	FakeCollections bool
 	node            couchbase.NodeCommon
 	hostPort        string
 	stats           internalStatsMap
+	commandTimings  *commandTimingMetricConfig
 	mc              *memcached.Client
 	ms              MetricSet
 	mux             sync.Mutex
@@ -146,22 +193,60 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 					zap.Error(err))
 				continue
 			}
-			results, err := m.processStatGroup(bucket, group, allStats, singletons)
-			if err != nil {
+			if err := m.processStatGroup(metrics, bucket, group, allStats, singletons); err != nil {
 				m.logger.Error("When requesting stats map", zap.String("bucket", bucket), zap.String("group", group),
 					zap.Error(err))
 				continue
 			}
-			for _, metric := range results {
-				metrics <- metric
+		}
+
+		if m.commandTimings != nil {
+			if err := m.processCommandTimings(metrics, bucket); err != nil {
+				m.logger.Error("Failed to process command timings", zap.String("bucket", bucket), zap.Error(err))
 			}
 		}
 	}
 }
 
-func (m *Metrics) processStatGroup(bucket string, groupName string, vals map[string]string,
-	singletons map[string]struct{}) ([]prometheus.Metric, error) {
-	result := make([]prometheus.Metric, 0, len(m.stats[groupName]))
+func (m *Metrics) processCommandTimings(metrics chan<- prometheus.Metric, bucket string) error {
+	for _, opcode := range m.commandTimings.Opcodes {
+		m.logger.Debug("Requesting command timings", zap.String("key", bucket), zap.String("opcode", opcode.name))
+		res, err := m.mc.Send(&gomemcached.MCRequest{
+			Opcode: 0xf3,
+			Key:    []byte(bucket),
+			Keylen: len(bucket),
+			Extras: []byte{byte(opcode.code)},
+			Opaque: 374593,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to get command timings for opcode %s: %w", opcode.name, err)
+		}
+		var data commandTimingsResponse
+		if err := json.Unmarshal(res.Body, &data); err != nil {
+			return fmt.Errorf("failed to unmarshal command timings for opcode %s: %w", opcode.name, err)
+		}
+		var (
+			totalCount     uint64
+			sum            float64
+			lastUpperBound float64
+			bounds         = make(map[float64]uint64, len(data.Data))
+		)
+		for _, datum := range data.Data {
+			upperBound := datum[0] / 1000000
+			count := uint64(datum[1])
+			totalCount += count
+			sum += float64(count) * (upperBound - lastUpperBound)
+			bounds[upperBound] = totalCount
+			lastUpperBound = upperBound
+		}
+		metrics <- prometheus.MustNewConstHistogram(m.commandTimings.desc, uint64(data.Total), sum, bounds,
+			bucket, opcode.name)
+	}
+	return nil
+}
+
+func (m *Metrics) processStatGroup(metrics chan<- prometheus.Metric, bucket string, groupName string, vals map[string]string,
+	singletons map[string]struct{}) error {
 	for _, metric := range m.stats[groupName] {
 		// Skip singleton metrics we've already seen
 		if metric.Singleton {
@@ -169,52 +254,48 @@ func (m *Metrics) processStatGroup(bucket string, groupName string, vals map[str
 				continue
 			}
 		}
-		var promMetrics []prometheus.Metric
 		var err error
 		switch metric.Type {
 		case common.MetricHistogram:
-			promMetrics, err = m.mapHistogramStat(bucket, vals, metric)
+			err = m.mapHistogramStat(metrics, bucket, vals, metric)
 		default:
-			promMetrics, err = m.mapValueStat(bucket, vals, metric)
+			err = m.mapValueStat(metrics, bucket, vals, metric)
 		}
 		if err != nil {
 			m.logger.Warn("Failed to process stat", zap.String("metric", metric.name), zap.Error(err))
+			continue
 		}
-		if promMetrics != nil {
-			result = append(result, promMetrics...)
-			if metric.Singleton {
-				singletons[metric.name] = struct{}{}
-			}
+		if metric.Singleton {
+			singletons[metric.name] = struct{}{}
 		}
 	}
-	return result, nil
+	return nil
 }
 
-func (m *Metrics) mapValueStat(bucket string, statsValues map[string]string,
-	metric *internalStat) ([]prometheus.Metric, error) {
-	result := make([]prometheus.Metric, 0)
+func (m *Metrics) mapValueStat(metrics chan<- prometheus.Metric, bucket string, statsValues map[string]string,
+	metric *internalStat) error {
 	for key, valStr := range statsValues {
 		if match := metric.exp.FindStringSubmatch(key); match != nil {
 			val, err := strconv.ParseFloat(valStr, 64)
 			if err != nil {
-				return nil, fmt.Errorf("failed to parseFloat for stat %s (val %v): %w", key, val, err)
+				return fmt.Errorf("failed to parseFloat for stat %s (val %v): %w", key, val, err)
 			}
 			labelValues := m.resolveLabelValues(bucket, metric, match)
 			m.logger.Debug("Mapped metric", zap.String("memcached_name", key), zap.String("prom_name", metric.name),
 				zap.Strings("labels", labelValues))
-			result = append(result, prometheus.MustNewConstMetric(
+			metrics <- prometheus.MustNewConstMetric(
 				metric.desc,
 				metric.Type.ToPrometheus(),
 				val*metric.multiplier,
 				labelValues...,
-			))
+			)
 		}
 	}
-	return result, nil
+	return nil
 }
 
-func (m *Metrics) mapHistogramStat(bucket string, vals map[string]string, metric *internalStat) ([]prometheus.Metric,
-	error) {
+func (m *Metrics) mapHistogramStat(metrics chan<- prometheus.Metric, bucket string, vals map[string]string,
+	metric *internalStat) error {
 	matchedKeys := make([]string, 0)
 	for key := range vals {
 		if metric.exp.MatchString(key) {
@@ -222,7 +303,7 @@ func (m *Metrics) mapHistogramStat(bucket string, vals map[string]string, metric
 		}
 	}
 	if len(matchedKeys) == 0 {
-		return nil, nil
+		return nil
 	}
 
 	sort.Slice(matchedKeys, func(i, j int) bool {
@@ -252,23 +333,22 @@ func (m *Metrics) mapHistogramStat(bucket string, vals map[string]string, metric
 		}
 		lowerBound, upperBound, err := findBounds(key)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		val, err := strconv.ParseUint(vals[key], 10, 64)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		histo.addReadings(lowerBound.Seconds(), upperBound.Seconds(), val)
+		histo.addReadings(lowerBound.Seconds()*metric.Multiplier, upperBound.Seconds()*metric.Multiplier, val)
 	}
 
-	results := make([]prometheus.Metric, 0, len(histograms))
 	for _, histo := range histograms {
 		if len(metric.ResampleBuckets) > 0 {
 			histo.resample(metric.ResampleBuckets)
 		}
-		results = append(results, histo.metric())
+		metrics <- histo.metric()
 	}
-	return results, nil
+	return nil
 }
 
 func findBounds(key string) (time.Duration, time.Duration, error) {
@@ -360,7 +440,7 @@ func (m *Metrics) updateMetricSet(ms MetricSet) error {
 	// > Descriptors that share the same fully-qualified names and the same label values of their constLabels are considered equal.
 	// (from https://pkg.go.dev/github.com/prometheus/client_golang/prometheus#Desc)
 	statsMap := make(internalStatsMap)
-	for metric, set := range ms {
+	for metric, set := range ms.Stats {
 		for _, val := range set.Values {
 			exp, err := regexp.Compile(val.Pattern)
 			if err != nil {
@@ -394,5 +474,14 @@ func (m *Metrics) updateMetricSet(ms MetricSet) error {
 
 	m.ms = ms
 	m.stats = statsMap
+	if ms.CommandTimings != nil {
+		m.commandTimings = &*ms.CommandTimings
+		m.commandTimings.desc = prometheus.NewDesc("kv_cmd_duration_seconds", "command durations", []string{
+			"bucket",
+			"opcode",
+		}, nil)
+	} else {
+		m.commandTimings = nil
+	}
 	return nil
 }

@@ -1,109 +1,94 @@
 {
   "memcached": {
-    "kv_vb_checkpoint_memory_bytes": {
-      "group": "",
-      "pattern": "^vb_(?P<state>.+?)_checkpoint_memory$",
-      "labels": ["bucket", "state"]
-    },
-    "kv_vb_checkpoint_memory_overhead_bytes": {
-      "group": "",
-      "pattern": "^vb_(?P<state>.+?)_checkpoint_memory_overhead$",
-      "labels": ["bucket", "state"]
-    },
-    "kv_vb_checkpoint_memory_unreferenced_bytes": {
-      "group": "",
-      "pattern": "^vb_(?P<state>.+?)_checkpoint_memory_unreferenced$",
-      "labels": ["bucket", "state"]
-    },
-    "kv_vb_itm_memory_bytes": {
-      "group": "",
-      "pattern": "^vb_(?P<state>.+?)_itm_memory$",
-      "labels": ["bucket", "state"]
-    },
-    "kv_num_vbuckets": {
-      "group": "",
-      "pattern": "^vb_(?P<state>.+?)_num$",
-      "labels": ["bucket", "state"]
-    },
-    "kv_curr_items": {
-      "group" : "",
-      "pattern": "^curr_items$",
-      "labels": ["bucket"]
-    },
-    "kv_uptime_seconds": {
-      "group" : "",
-      "pattern": "^uptime$",
-      "labels": [],
-      "singleton": true
-    },
-    "kv_ops": [
-      {
-        "group": "",
-        "pattern": "^ep_num_ops_(?P<op>get_meta|set_meta|del_meta|set_ret_meta|del_ret_meta)$",
-        "labels": ["bucket", "op"],
-        "type": "counter"
-      }, {
-        "group": "",
-        "pattern": "^ep_num_ops_get_meta_on_set_meta$",
-        "labels": ["bucket"],
-        "constLabels": {
-          "op": "get_meta_for_set_meta"
-        },
-        "type": "counter"
-      }, {
-        "group": "",
-        "pattern": "^cmd_(?P<op>flush|set)$",
-        "labels": ["bucket", "op"],
-        "type": "counter"
-      },
-      {
-        "group": "",
-        "pattern": "^(?P<op>cas|get|delete|incr|decr)_(?P<result>hit|miss)e?s$",
-        "labels": ["bucket", "op", "result"],
-        "type": "counter"
-      }
-    ],
-    "kv_vb_perc_mem_resident_ratio": {
-      "group": "",
-      "pattern": "^vb_(?P<state>active|replica|dead|pending)_perc_mem_resident$",
-      "labels": ["bucket", "state"],
-      "type": "gauge",
-      "multiplier": 0.01
-    },
-    "kv_cmd_duration_seconds": {
-      "group": "timings",
-      "pattern": "^(?P<opcode>[a-z_]+)_cmd_[0-9]+,[0-9]+$",
-      "labels": ["bucket", "opcode:uppercase"],
-      "type": "histogram",
-      "resampleBuckets": [
-        0.000001,
-        0.000002,
-        0.000004,
-        0.000008,
-        0.000016,
-        0.000032,
-        0.000064,
-        0.000128,
-        0.000256,
-        0.000512,
-        0.001024,
-        0.002048,
-        0.004096,
-        0.008192,
-        0.016384,
-        0.032768,
-        0.065536,
-        0.131072,
-        0.262144,
-        0.524288,
-        1.048576,
-        2.097152,
-        4.194304,
-        8.388608,
-        16.777216,
-        33.554432,
-        65.011712
+    "commandTimings": {
+      "opcodes": [
+        "GET",
+        "SET",
+        "ADD",
+        "REPLACE",
+        "DELETE",
+        "INCREMENT",
+        "DECREMENT",
+        "FLUSH",
+        "STAT",
+        "GET_META",
+        "SET_WITH_META",
+        "ADD_WITH_META",
+        "DELETE_WITH_META",
+        "SET_VBUCKET"
       ]
+    },
+    "stats": {
+      "kv_vb_checkpoint_memory_bytes": {
+        "group": "",
+        "pattern": "^vb_(?P<state>.+?)_checkpoint_memory$",
+        "labels": ["bucket", "state"]
+      },
+      "kv_vb_checkpoint_memory_overhead_bytes": {
+        "group": "",
+        "pattern": "^vb_(?P<state>.+?)_checkpoint_memory_overhead$",
+        "labels": ["bucket", "state"]
+      },
+      "kv_vb_checkpoint_memory_unreferenced_bytes": {
+        "group": "",
+        "pattern": "^vb_(?P<state>.+?)_checkpoint_memory_unreferenced$",
+        "labels": ["bucket", "state"]
+      },
+      "kv_vb_itm_memory_bytes": {
+        "group": "",
+        "pattern": "^vb_(?P<state>.+?)_itm_memory$",
+        "labels": ["bucket", "state"]
+      },
+      "kv_num_vbuckets": {
+        "group": "",
+        "pattern": "^vb_(?P<state>.+?)_num$",
+        "labels": ["bucket", "state"]
+      },
+      "kv_curr_items": {
+        "group" : "",
+        "pattern": "^curr_items$",
+        "labels": ["bucket"]
+      },
+      "kv_uptime_seconds": {
+        "group" : "",
+        "pattern": "^uptime$",
+        "labels": [],
+        "singleton": true
+      },
+      "kv_ops": [
+        {
+          "group": "",
+          "pattern": "^ep_num_ops_(?P<op>get_meta|set_meta|del_meta|set_ret_meta|del_ret_meta)$",
+          "labels": ["bucket", "op"],
+          "type": "counter"
+        }, {
+          "group": "",
+          "pattern": "^ep_num_ops_get_meta_on_set_meta$",
+          "labels": ["bucket"],
+          "constLabels": {
+            "op": "get_meta_for_set_meta"
+          },
+          "type": "counter"
+        }, {
+          "group": "",
+          "pattern": "^cmd_(?P<op>flush|set)$",
+          "labels": ["bucket", "op"],
+          "type": "counter"
+        },
+        {
+          "group": "",
+          "pattern": "^(?P<op>cas|get|delete|incr|decr)_(?P<result>hit|miss)e?s$",
+          "labels": ["bucket", "op", "result"],
+          "type": "counter"
+        }
+      ],
+      "kv_vb_perc_mem_resident_ratio": {
+        "group": "",
+        "pattern": "^vb_(?P<state>active|replica|dead|pending)_perc_mem_resident$",
+        "labels": ["bucket", "state"],
+        "type": "gauge",
+        "multiplier": 0.01
+      }
     }
   },
   "gsi": {
