@@ -36,10 +36,18 @@ type MetricConfig struct {
 	Help string `json:"help,omitempty"`
 	// Type is the type of metric to emit (counter, gauge, histogram, untyped). Defaults to untyped.
 	Type common.MetricType `json:"type"`
+	// Multiplier is a constant by which to multiply the resulting stats value.
+	// For example, it can be used to fix values that are milliseconds in 6.0 but seconds in 7.0,
+	// by setting a multiplier of 0.001.
+	// If unset, defaults to 1 (no change).
+	// NOTE: Multiplier is not currently applied to histograms.
+	Multiplier float64 `json:"multiplier"`
 	// Singleton should be `true` for metrics that should only be emitted once.
 	// This is necessary because the memcached protocol only allows gathering stats in the context of a bucket,
 	// even for stats that are global.
-	Singleton       bool      `json:"singleton"`
+	Singleton bool `json:"singleton"`
+	// ResampleBuckets is only applicable for histograms.
+	// It represents the bucket values that the original memcached buckets should be remapped to.
 	ResampleBuckets []float64 `json:"resampleBuckets"`
 }
 
@@ -69,9 +77,10 @@ type MetricSet map[string]MetricConfigs
 
 type internalStat struct {
 	MetricConfig
-	name string
-	desc *prometheus.Desc
-	exp  *regexp.Regexp
+	name       string
+	desc       *prometheus.Desc
+	exp        *regexp.Regexp
+	multiplier float64
 }
 
 // internalStatsMap is a map of Memcached STAT groups to metrics.
@@ -196,7 +205,7 @@ func (m *Metrics) mapValueStat(bucket string, statsValues map[string]string,
 			result = append(result, prometheus.MustNewConstMetric(
 				metric.desc,
 				metric.Type.ToPrometheus(),
-				val,
+				val*metric.multiplier,
 				labelValues...,
 			))
 		}
@@ -366,11 +375,16 @@ func (m *Metrics) updateMetricSet(ms MetricSet) error {
 					labels[i] = label
 				}
 			}
+			multiplier := val.Multiplier
+			if multiplier == 0 {
+				multiplier = 1
+			}
 			stat := internalStat{
 				MetricConfig: val,
 				name:         metric,
 				exp:          exp,
 				desc:         prometheus.NewDesc(metric, val.Help, labels, val.ConstLabels),
+				multiplier:   multiplier,
 			}
 
 			// We can do this, since append(nil) will automatically make()

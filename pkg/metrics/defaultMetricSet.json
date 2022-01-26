@@ -67,7 +67,8 @@
       "group": "",
       "pattern": "^vb_(?P<state>active|replica|dead|pending)_perc_mem_resident$",
       "labels": ["bucket", "state"],
-      "type": "gauge"
+      "type": "gauge",
+      "multiplier": 0.01
     },
     "kv_cmd_duration_seconds": {
       "group": "timings",
