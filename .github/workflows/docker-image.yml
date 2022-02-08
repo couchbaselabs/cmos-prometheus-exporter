@@ -29,10 +29,11 @@ jobs:
       run: |
         docker tag ghcr.io/markspolakovs/yacpe:${{ github.sha }} ghcr.io/markspolakovs/yacpe:latest
         docker push ghcr.io/markspolakovs/yacpe:latest
-    - name: Clean up old tags
-      uses: actions/delete-package-versions@v1
-      with:
-        owner: markspolakovs
-        package-name: yacpe
-        num-old-versions-to-delete: 1
-        token: ${{ secrets.GITHUB_TOKEN }}
+# TODO: this doesn't work
+#    - name: Clean up old tags
+#      uses: actions/delete-package-versions@v1
+#      with:
+#        owner: markspolakovs
+#        package-name: yacpe
+#        num-old-versions-to-delete: 1
+#        token: ${{ secrets.GITHUB_TOKEN }}
