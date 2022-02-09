@@ -81,29 +81,10 @@ func (m *MetricConfigs) UnmarshalJSON(bytes []byte) error {
 	}
 }
 
-type mcOpcode struct {
-	code gomemcached.CommandCode
-	name string
-}
-
-func (m *mcOpcode) UnmarshalJSON(bytes []byte) error {
-	var name string
-	if err := json.Unmarshal(bytes, &name); err != nil {
-		return err
-	}
-	for code, opName := range gomemcached.CommandNames {
-		if opName == name {
-			m.code = code
-			m.name = name
-			return nil
-		}
-	}
-	return fmt.Errorf("unknown memcached opcode %s", name)
-}
-
 type commandTimingMetricConfig struct {
-	Opcodes []mcOpcode `json:"opcodes"`
-	desc    *prometheus.Desc
+	Opcodes         []mcOpcode `json:"opcodes"`
+	ResampleBuckets []float64  `json:"resampleBuckets"`
+	desc            *prometheus.Desc
 }
 
 // MetricSet is a mapping of Prometheus metric names to MetricConfigs.
@@ -124,13 +105,6 @@ type internalStat struct {
 
 // internalStatsMap is a map of Memcached STAT groups to metrics.
 type internalStatsMap map[string][]*internalStat
-
-type commandTimingsResponse struct {
-	BucketsLow float64 `json:"bucketsLow"`
-	// Values are [upper bound, ops, percentile]
-	Data  [][3]float64 `json:"data"`
-	Total float64      `json:"total"`
-}
 
 type Metrics struct {
 	FakeCollections bool
@@ -208,43 +182,6 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 	}
 }
 
-func (m *Metrics) processCommandTimings(metrics chan<- prometheus.Metric, bucket string) error {
-	for _, opcode := range m.commandTimings.Opcodes {
-		m.logger.Debug("Requesting command timings", zap.String("key", bucket), zap.String("opcode", opcode.name))
-		res, err := m.mc.Send(&gomemcached.MCRequest{
-			Opcode: 0xf3,
-			Key:    []byte(bucket),
-			Keylen: len(bucket),
-			Extras: []byte{byte(opcode.code)},
-			Opaque: 374593,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to get command timings for opcode %s: %w", opcode.name, err)
-		}
-		var data commandTimingsResponse
-		if err := json.Unmarshal(res.Body, &data); err != nil {
-			return fmt.Errorf("failed to unmarshal command timings for opcode %s: %w", opcode.name, err)
-		}
-		var (
-			totalCount     uint64
-			sum            float64
-			lastUpperBound float64
-			bounds         = make(map[float64]uint64, len(data.Data))
-		)
-		for _, datum := range data.Data {
-			upperBound := datum[0] / 1000000
-			count := uint64(datum[1])
-			totalCount += count
-			sum += float64(count) * (upperBound - lastUpperBound)
-			bounds[upperBound] = totalCount
-			lastUpperBound = upperBound
-		}
-		metrics <- prometheus.MustNewConstHistogram(m.commandTimings.desc, uint64(data.Total), sum, bounds,
-			bucket, opcode.name)
-	}
-	return nil
-}
-
 func (m *Metrics) processStatGroup(metrics chan<- prometheus.Metric, bucket string, groupName string, vals map[string]string,
 	singletons map[string]struct{}) error {
 	for _, metric := range m.stats[groupName] {
@@ -281,8 +218,8 @@ func (m *Metrics) mapValueStat(metrics chan<- prometheus.Metric, bucket string, 
 				return fmt.Errorf("failed to parseFloat for stat %s (val %v): %w", key, val, err)
 			}
 			labelValues := m.resolveLabelValues(bucket, metric, match)
-			m.logger.Debug("Mapped metric", zap.String("memcached_name", key), zap.String("prom_name", metric.name),
-				zap.Strings("labels", labelValues))
+			//m.logger.Debug("Mapped metric", zap.String("memcached_name", key), zap.String("prom_name", metric.name),
+			//	zap.Strings("labels", labelValues))
 			metrics <- prometheus.MustNewConstMetric(
 				metric.desc,
 				metric.Type.ToPrometheus(),
@@ -324,11 +261,7 @@ func (m *Metrics) mapHistogramStat(metrics chan<- prometheus.Metric, bucket stri
 		statName := key[:lastUnderscoreIdx]
 		histo, ok := histograms[statName]
 		if !ok {
-			histo = &histogram{
-				im:      metric,
-				labels:  m.resolveLabelValues(bucket, metric, metric.exp.FindStringSubmatch(key)),
-				buckets: make(map[float64]uint64),
-			}
+			histo = newHistogram(metric.desc, m.resolveLabelValues(bucket, metric, metric.exp.FindStringSubmatch(key))...)
 			histograms[statName] = histo
 		}
 		lowerBound, upperBound, err := findBounds(key)
@@ -349,18 +282,6 @@ func (m *Metrics) mapHistogramStat(metrics chan<- prometheus.Metric, bucket stri
 		metrics <- histo.metric()
 	}
 	return nil
-}
-
-func findBounds(key string) (time.Duration, time.Duration, error) {
-	lastUnderscoreIdx := strings.LastIndexByte(key, '_')
-	bucketBounds := key[lastUnderscoreIdx+1:]
-	commaIdx := strings.IndexRune(bucketBounds, ',')
-	lowerBound, err := strconv.ParseFloat(bucketBounds[:commaIdx], 64)
-	if err != nil {
-		return 0, 0, err
-	}
-	upperBound, err := strconv.ParseFloat(bucketBounds[commaIdx+1:], 64)
-	return time.Duration(lowerBound) * time.Microsecond, time.Duration(upperBound) * time.Microsecond, err
 }
 
 func (m *Metrics) resolveLabelValues(bucket string, metric *internalStat, match []string) []string {
