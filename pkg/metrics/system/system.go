@@ -34,7 +34,7 @@ var metricLabels = map[MetricName][]string{
 type Metric struct {
 	Name        string            `json:"name"`
 	Help        string            `json:"help"`
-	ConstLabels prometheus.Labels `json:"labels"`
+	ConstLabels prometheus.Labels `json:"constLabels"`
 	desc        *prometheus.Desc
 }
 
