@@ -19,6 +19,7 @@ import (
 	"github.com/markspolakovs/yacpe/pkg/metrics/gsi"
 	"github.com/markspolakovs/yacpe/pkg/metrics/memcached"
 	"github.com/markspolakovs/yacpe/pkg/metrics/n1ql"
+	"github.com/markspolakovs/yacpe/pkg/metrics/system"
 )
 
 var flagConfigPath = flag.String("config-file", "", "path to read config from (leave blank to use defaults)")
@@ -55,6 +56,9 @@ func main() {
 
 	ms := metrics.LoadDefaultMetricSet()
 	reg := prometheus.NewPedanticRegistry()
+
+	sys := system.NewSystemMetrics(logger.Named("system").Sugar(), ms.System)
+	reg.MustRegister(sys)
 
 	hasKV, err := node.HasService(cbrest.ServiceData)
 	if err != nil {

@@ -3,18 +3,21 @@ module github.com/markspolakovs/yacpe
 go 1.17
 
 require (
+	github.com/cloudfoundry/gosigar v1.3.3
 	github.com/couchbase/gomemcached v0.1.4
+	github.com/couchbase/goutils v0.1.2
 	github.com/couchbase/tools-common v0.0.0-20211108155555-e46f1ebc577b
 	github.com/creasty/defaults v1.5.2
 	github.com/prometheus/client_golang v1.11.0
+	github.com/spf13/jwalterweatherman v1.1.0
 	github.com/spf13/viper v1.9.0
+	github.com/stretchr/testify v1.7.0
 	go.uber.org/zap v1.19.1
 )
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
-	github.com/couchbase/goutils v0.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
@@ -30,14 +33,12 @@ require (
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
-	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
-	golang.org/x/sys v0.0.0-20210917161153-d61c044b1678 // indirect
+	golang.org/x/sys v0.0.0-20220110181412-a018aaa089fe // indirect
 	golang.org/x/text v0.3.6 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/ini.v1 v1.63.2 // indirect

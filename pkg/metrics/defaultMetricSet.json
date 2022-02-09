@@ -281,5 +281,73 @@
       "name": "requests_1000ms.count",
       "type": "counter"
     }
+  },
+  "system": {
+    "memFree": {
+      "name": "sys_mem_free",
+      "constLabels": {
+        "category": "system"
+      }
+    },
+    "memTotal": {
+      "name": "sys_mem_total",
+      "constLabels": {
+        "category": "system"
+      }
+    },
+    "memActualFree": {
+      "name": "sys_mem_actual_free",
+      "constLabels": {
+        "category": "system"
+      }
+    },
+    "memActualUsed": {
+      "name": "sys_mem_actual_used",
+      "constLabels": {
+        "category": "system"
+      }
+    },
+    "memUsedSys": {
+      "name": "sys_mem_used_sys",
+      "constLabels": {
+        "category": "system"
+      }
+    },
+    "cpuUtilization": {
+      "name": "sys_cpu_utilization_rate",
+      "constLabels": {
+        "category": "system"
+      }
+    },
+    "cpuUser": {
+      "name": "sys_cpu_user_rate",
+      "constLabels": {
+        "category": "system"
+      }
+    },
+    "cpuSys": {
+      "name": "sys_cpu_sys_rate",
+      "constLabels": {
+        "category": "system"
+      }
+    },
+    "cpuIrq": {
+      "name": "sys_cpu_irq_rate",
+      "constLabels": {
+        "category": "system"
+      }
+    },
+    "cpuStolen": {
+      "name": "sys_cpu_stolen_rate",
+      "constLabels": {
+        "category": "system"
+      }
+    },
+    "cpuCoresAvailable": {
+      "name": "sys_cpu_cores_available",
+      "constLabels": {
+        "category": "system"
+      }
+    }
   }
 }
