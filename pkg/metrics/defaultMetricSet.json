@@ -155,6 +155,9 @@
     }
   },
   "gsi": {
+    "index_avg_drain_rate": {
+      "name": "avg_drain_rate"
+    },
     "index_raw_data_size": {
       "name": "data_size"
     },
@@ -192,6 +195,33 @@
     },
     "index_num_docs_pending": {
       "name": "num_docs_pending"
+    },
+    "index_cache_hits": {
+      "name": "cache_hits"
+    },
+    "index_cache_misses": {
+      "name": "cache_misses"
+    },
+    "index_frag_percent": {
+      "name": "frag_percent"
+    },
+    "index_num_docs_indexed": {
+      "name": "num_docs_indexed"
+    },
+    "index_num_docs_queued": {
+      "name": "num_docs_queued"
+    },
+    "index_num_rows_returned": {
+      "name": "num_rows_returned"
+    },
+    "index_recs_in_mem": {
+      "name": "recs_in_mem"
+    },
+    "index_recs_on_disk": {
+      "name": "recs_on_disk"
+    },
+    "index_scan_bytes_read": {
+      "name": "scan_bytes_read"
     }
   },
   "fts": {
