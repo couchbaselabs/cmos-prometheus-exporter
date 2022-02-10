@@ -16,6 +16,7 @@ import (
 	"github.com/markspolakovs/yacpe/pkg/config"
 	"github.com/markspolakovs/yacpe/pkg/couchbase"
 	"github.com/markspolakovs/yacpe/pkg/metrics"
+	"github.com/markspolakovs/yacpe/pkg/metrics/fts"
 	"github.com/markspolakovs/yacpe/pkg/metrics/gsi"
 	"github.com/markspolakovs/yacpe/pkg/metrics/memcached"
 	"github.com/markspolakovs/yacpe/pkg/metrics/n1ql"
@@ -39,6 +40,7 @@ func main() {
 	// From this point on, we should switch to using Zap for logging.
 	logCfg := zap.NewProductionConfig()
 	logCfg.Level = zap.NewAtomicLevelAt(cfg.LogLevel.ToZap())
+	logCfg.Encoding = "console"
 	logger, _ := logCfg.Build()
 	defer logger.Sync()
 
@@ -97,6 +99,15 @@ func main() {
 			logger.Sugar().Fatalw("Failed to create N1QL collector", "err", err)
 		}
 		reg.MustRegister(n1qlCollector)
+	}
+
+	hasFTS, err := node.HasService(cbrest.ServiceSearch)
+	if err != nil {
+		logger.Sugar().Fatalw("Failed to check FTS", "err", err)
+	}
+	if hasFTS {
+		ftsCollector := fts.NewCollector(logger.Sugar().Named("fts"), node, ms.FTS, cfg.FakeCollections)
+		reg.MustRegister(ftsCollector)
 	}
 
 	http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))

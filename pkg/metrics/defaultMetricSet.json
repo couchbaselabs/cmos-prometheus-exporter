@@ -51,35 +51,52 @@
       "kv_vb_checkpoint_memory_bytes": {
         "group": "",
         "pattern": "^vb_(?P<state>.+?)_checkpoint_memory$",
-        "labels": ["bucket", "state"]
+        "labels": [
+          "bucket",
+          "state"
+        ]
       },
       "kv_vb_checkpoint_memory_overhead_bytes": {
         "group": "",
         "pattern": "^vb_(?P<state>.+?)_checkpoint_memory_overhead$",
-        "labels": ["bucket", "state"]
+        "labels": [
+          "bucket",
+          "state"
+        ]
       },
       "kv_vb_checkpoint_memory_unreferenced_bytes": {
         "group": "",
         "pattern": "^vb_(?P<state>.+?)_checkpoint_memory_unreferenced$",
-        "labels": ["bucket", "state"]
+        "labels": [
+          "bucket",
+          "state"
+        ]
       },
       "kv_vb_itm_memory_bytes": {
         "group": "",
         "pattern": "^vb_(?P<state>.+?)_itm_memory$",
-        "labels": ["bucket", "state"]
+        "labels": [
+          "bucket",
+          "state"
+        ]
       },
       "kv_num_vbuckets": {
         "group": "",
         "pattern": "^vb_(?P<state>.+?)_num$",
-        "labels": ["bucket", "state"]
+        "labels": [
+          "bucket",
+          "state"
+        ]
       },
       "kv_curr_items": {
-        "group" : "",
+        "group": "",
         "pattern": "^curr_items$",
-        "labels": ["bucket"]
+        "labels": [
+          "bucket"
+        ]
       },
       "kv_uptime_seconds": {
-        "group" : "",
+        "group": "",
         "pattern": "^uptime$",
         "labels": [],
         "singleton": true
@@ -88,33 +105,50 @@
         {
           "group": "",
           "pattern": "^ep_num_ops_(?P<op>get_meta|set_meta|del_meta|set_ret_meta|del_ret_meta)$",
-          "labels": ["bucket", "op"],
+          "labels": [
+            "bucket",
+            "op"
+          ],
           "type": "counter"
-        }, {
+        },
+        {
           "group": "",
           "pattern": "^ep_num_ops_get_meta_on_set_meta$",
-          "labels": ["bucket"],
+          "labels": [
+            "bucket"
+          ],
           "constLabels": {
             "op": "get_meta_for_set_meta"
           },
           "type": "counter"
-        }, {
+        },
+        {
           "group": "",
           "pattern": "^cmd_(?P<op>flush|set)$",
-          "labels": ["bucket", "op"],
+          "labels": [
+            "bucket",
+            "op"
+          ],
           "type": "counter"
         },
         {
           "group": "",
           "pattern": "^(?P<op>cas|get|delete|incr|decr)_(?P<result>hit|miss)e?s$",
-          "labels": ["bucket", "op", "result"],
+          "labels": [
+            "bucket",
+            "op",
+            "result"
+          ],
           "type": "counter"
         }
       ],
       "kv_vb_perc_mem_resident_ratio": {
         "group": "",
         "pattern": "^vb_(?P<state>active|replica|dead|pending)_perc_mem_resident$",
-        "labels": ["bucket", "state"],
+        "labels": [
+          "bucket",
+          "state"
+        ],
         "type": "gauge",
         "multiplier": 0.01
       }
@@ -158,6 +192,180 @@
     },
     "index_num_docs_pending": {
       "name": "num_docs_pending"
+    }
+  },
+  "fts": {
+    "fts_avg_grpc_queries_latency": {
+      "name": "avg_grpc_queries_latency"
+    },
+    "fts_avg_internal_queries_latency": {
+      "name": "avg_internal_queries_latency"
+    },
+    "fts_avg_queries_latency": {
+      "name": "avg_queries_latency"
+    },
+    "fts_doc_count": {
+      "name": "doc_count"
+    },
+    "fts_num_bytes_used_disk": {
+      "name": "num_bytes_used_disk"
+    },
+    "fts_num_bytes_used_disk_by_root": {
+      "name": "num_bytes_used_disk_by_root"
+    },
+    "fts_num_files_on_disk": {
+      "name": "num_files_on_disk"
+    },
+    "fts_num_mutations_to_index": {
+      "name": "num_mutations_to_index"
+    },
+    "fts_num_pindexes_actual": {
+      "name": "num_pindexes_actual"
+    },
+    "fts_num_pindexes_target": {
+      "name": "num_pindexes_target"
+    },
+    "fts_num_recs_to_persist": {
+      "name": "num_recs_to_persist"
+    },
+    "fts_num_root_filesegments": {
+      "name": "num_root_filesegments"
+    },
+    "fts_num_root_memorysegments": {
+      "name": "num_root_memorysegments"
+    },
+    "fts_total_bytes_indexed": {
+      "name": "total_bytes_indexed"
+    },
+    "fts_total_bytes_query_results": {
+      "name": "total_bytes_query_results"
+    },
+    "fts_total_compaction_written_bytes": {
+      "name": "total_compaction_written_bytes"
+    },
+    "fts_total_grpc_internal_queries": {
+      "name": "total_grpc_internal_queries"
+    },
+    "fts_total_grpc_queries_error": {
+      "name": "total_grpc_queries_error"
+    },
+    "fts_total_grpc_queries_slow": {
+      "name": "total_grpc_queries_slow"
+    },
+    "fts_total_grpc_queries_timeout": {
+      "name": "total_grpc_queries_timeout"
+    },
+    "fts_total_internal_queries": {
+      "name": "total_internal_queries"
+    },
+    "fts_total_queries": {
+      "name": "total_queries"
+    },
+    "fts_total_queries_error": {
+      "name": "total_queries_error"
+    },
+    "fts_total_queries_slow": {
+      "name": "total_queries_slow"
+    },
+    "fts_total_queries_timeout": {
+      "name": "total_queries_timeout"
+    },
+    "fts_total_request_time": {
+      "name": "total_request_time"
+    },
+    "fts_total_term_searchers": {
+      "name": "total_term_searchers"
+    },
+    "fts_total_term_searchers_finished": {
+      "name": "total_term_searchers_finished"
+    },
+    "fts_total_gc": {
+      "name": "total_gc",
+      "global": true
+    },
+    "fts_tot_remote_http": {
+      "name": "tot_remote_http",
+      "global": true
+    },
+    "fts_tot_remote_grpc": {
+      "name": "tot_remote_grpc",
+      "global": true
+    },
+    "fts_tot_remote_grpc_tls": {
+      "name": "tot_remote_grpc_tls",
+      "global": true
+    },
+    "fts_tot_grpc_listeners_opened": {
+      "name": "tot_grpc_listeners_opened",
+      "global": true
+    },
+    "fts_tot_grpc_listeners_closed": {
+      "name": "tot_grpc_listeners_closed",
+      "global": true
+    },
+    "fts_tot_https_limitlisteners_opened": {
+      "name": "tot_https_limitlisteners_opened",
+      "global": true
+    },
+    "fts_tot_https_limitlisteners_closed": {
+      "name": "tot_https_limitlisteners_closed",
+      "global": true
+    },
+    "fts_tot_http_limitlisteners_opened": {
+      "name": "tot_http_limitlisteners_opened",
+      "global": true
+    },
+    "fts_tot_http_limitlisteners_closed": {
+      "name": "tot_http_limitlisteners_closed",
+      "global": true
+    },
+    "fts_tot_batches_flushed_on_maxops": {
+      "name": "tot_batches_flushed_on_maxops",
+      "global": true
+    },
+    "fts_tot_queryreject_on_memquota": {
+      "name": "tot_queryreject_on_memquota",
+      "global": true
+    },
+    "fts_num_bytes_used_ram": {
+      "name": "num_bytes_used_ram",
+      "global": true
+    },
+    "fts_tot_bleve_dest_opened": {
+      "name": "tot_bleve_dest_opened",
+      "global": true
+    },
+    "fts_tot_bleve_dest_closed": {
+      "name": "tot_bleve_dest_closed",
+      "global": true
+    },
+    "fts_pct_cpu_gc": {
+      "name": "pct_cpu_gc",
+      "global": true
+    },
+    "fts_tot_remote_http2": {
+      "name": "tot_remote_http2",
+      "global": true
+    },
+    "fts_batch_bytes_added": {
+      "name": "batch_bytes_added",
+      "global": true
+    },
+    "fts_batch_bytes_removed": {
+      "name": "batch_bytes_removed",
+      "global": true
+    },
+    "fts_curr_batches_blocked_by_herder": {
+      "name": "curr_batches_blocked_by_herder",
+      "global": true
+    },
+    "fts_tot_grpc_queryreject_on_memquota": {
+      "name": "tot_grpc_queryreject_on_memquota",
+      "global": true
+    },
+    "fts_tot_batches_flushed_on_timer": {
+      "name": "tot_batches_flushed_on_timer",
+      "global": true
     }
   },
   "n1ql": {
