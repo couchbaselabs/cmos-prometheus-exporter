@@ -17,7 +17,7 @@ const (
 	MemActualFree            = "memActualFree"
 	MemActualUsed            = "memActualUsed"
 	// TODO
-	//MemUsedSys                   = "memUsedSys"
+	// MemUsedSys                   = "memUsedSys"
 	cpuUtilization    = "cpuUtilization"
 	cpuUser           = "cpuUser"
 	cpuSys            = "cpuSys"

@@ -57,7 +57,7 @@ func (m *Metrics) processCommandTimings(metrics chan<- prometheus.Metric, bucket
 			}
 			upperBound := datum[0] / 1e+6 // convert us to s
 			count := uint64(datum[1])
-			//m.logger.Debug("Adding timings", zap.String("opcode", opcode.name), zap.Float64("upperBound", upperBound), zap.Uint64("count", count), zap.Float64("lUB", lastUpperBound))
+			// m.logger.Debug("Adding timings", zap.String("opcode", opcode.name), zap.Float64("upperBound", upperBound), zap.Uint64("count", count), zap.Float64("lUB", lastUpperBound))
 			histo.addReadings(lastUpperBound, upperBound, count)
 			lastUpperBound = upperBound
 		}

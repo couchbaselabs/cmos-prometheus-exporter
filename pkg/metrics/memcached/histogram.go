@@ -69,7 +69,7 @@ func (h *histogram) resample(newUpperBounds []float64) {
 		// into it (since the upper bounds are always less-than-or-equal - if we did it the other way round we'd over-count).
 		if oldUpperBounds[i+1] > newUpperBounds[nextNewUpperBoundIndex] {
 			resampled[newUpperBounds[nextNewUpperBoundIndex]] = sum
-			nextNewUpperBoundIndex += 1
+			nextNewUpperBoundIndex++
 		}
 	}
 

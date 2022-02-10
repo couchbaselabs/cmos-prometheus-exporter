@@ -218,7 +218,7 @@ func (m *Metrics) mapValueStat(metrics chan<- prometheus.Metric, bucket string, 
 				return fmt.Errorf("failed to parseFloat for stat %s (val %v): %w", key, val, err)
 			}
 			labelValues := m.resolveLabelValues(bucket, metric, match)
-			//m.logger.Debug("Mapped metric", zap.String("memcached_name", key), zap.String("prom_name", metric.name),
+			// m.logger.Debug("Mapped metric", zap.String("memcached_name", key), zap.String("prom_name", metric.name),
 			//	zap.Strings("labels", labelValues))
 			metrics <- prometheus.MustNewConstMetric(
 				metric.desc,
