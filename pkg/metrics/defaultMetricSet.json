@@ -584,5 +584,83 @@
         "category": "system"
       }
     }
+  },
+  "eventing": {
+    "eventing_agg_queue_memory": {
+      "labels": ["functionName"],
+      "expression": ".[] | [.execution_stats.agg_queue_memory, .function_name]"
+    },
+    "eventing_agg_queue_size": {
+      "labels": ["functionName"],
+      "expression": ".[] | [.execution_stats.agg_queue_size, .function_name]"
+    },
+    "eventing_bkt_ops_cas_mismatch_count": {
+      "labels": ["functionName"],
+      "expression": ".[] | [.failure_stats.bkt_ops_cas_mismatch_count, .function_name]"
+    },
+    "eventing_bucket_op_exception_count": {
+      "labels": ["functionName"],
+      "expression": ".[] | [.failure_stats.bucket_op_exception_count, .function_name]"
+    },
+    "eventing_checkpoint_failure_count": {
+      "labels": ["functionName"],
+      "expression": ".[] | [.failure_stats.checkpoint_failure_count, .function_name]"
+    },
+    "eventing_dcp_backlog": {
+      "labels": ["functionName"],
+      "expression": ".[] | [.events_remaining.dcp_backlog, .function_name]"
+    },
+    "eventing_dcp_delete_msg_counter": {
+      "labels": ["functionName"],
+      "expression": ".[] | [.execution_stats.dcp_delete_msg_counter, .function_name]"
+    },
+    "eventing_dcp_mutations_msg_counter": {
+      "labels": ["functionName"],
+      "expression": ".[] | [.execution_stats.dcp_mutation_msg_counter, .function_name]"
+    },
+    "eventing_n1ql_op_exception_count": {
+      "labels": ["functionName"],
+      "expression": ".[] | [.failure_stats.n1ql_op_exception_count, .function_name]"
+    },
+    "eventing_on_delete_failure": {
+      "labels": ["functionName"],
+      "expression": ".[] | [.execution_stats.on_delete_failure, .function_name]"
+    },
+    "eventing_on_delete_success": {
+      "labels": ["functionName"],
+      "expression": ".[] | [.execution_stats.on_delete_success, .function_name]"
+    },
+    "eventing_on_update_failure": {
+      "labels": ["functionName"],
+      "expression": ".[] | [.execution_stats.on_update_failure, .function_name]"
+    },
+    "eventing_on_update_success": {
+      "labels": ["functionName"],
+      "expression": ".[] | [.execution_stats.on_update_success, .function_name]"
+    },
+    "eventing_timeout_count": {
+      "labels": ["functionName"],
+      "expression": ".[] | [.failure_stats.timeout_count, .function_name]"
+    },
+    "eventing_timer_callback_missing_counter": {
+      "labels": ["functionName"],
+      "expression": ".[] | [.failure_stats.timer_callback_missing_counter, .function_name]"
+    },
+    "eventing_timer_cancel_counter": {
+      "labels": ["functionName"],
+      "expression": ".[] | [.execution_stats.timer_cancel_counter, .function_name]"
+    },
+    "eventing_timer_context_size_exception_counter": {
+      "labels": ["functionName"],
+      "expression": ".[] | [.failure_stats.timer_context_size_exceeded_counter, .function_name]"
+    },
+    "eventing_timer_create_counter": {
+      "labels": ["functionName"],
+      "expression": ".[] | [.execution_stats.timer_create_counter, .function_name]"
+    },
+    "eventing_timer_msg_counter": {
+      "labels": ["functionName"],
+      "expression": ".[] | [.execution_stats.timer_msg_counter, .function_name]"
+    }
   }
 }

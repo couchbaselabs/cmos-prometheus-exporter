@@ -8,6 +8,7 @@ require (
 	github.com/couchbase/goutils v0.1.2
 	github.com/couchbase/tools-common v0.0.0-20211108155555-e46f1ebc577b
 	github.com/creasty/defaults v1.5.2
+	github.com/itchyny/gojq v0.12.6
 	github.com/prometheus/client_golang v1.11.0
 	github.com/spf13/jwalterweatherman v1.1.0
 	github.com/spf13/viper v1.9.0
@@ -22,6 +23,7 @@ require (
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
+	github.com/itchyny/timefmt-go v0.1.3 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.4.2 // indirect

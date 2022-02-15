@@ -7,6 +7,7 @@ import (
 
 	"github.com/creasty/defaults"
 
+	"github.com/markspolakovs/yacpe/pkg/metrics/eventing"
 	"github.com/markspolakovs/yacpe/pkg/metrics/fts"
 	"github.com/markspolakovs/yacpe/pkg/metrics/gsi"
 	"github.com/markspolakovs/yacpe/pkg/metrics/memcached"
@@ -20,6 +21,7 @@ type MetricSet struct {
 	N1QL      n1ql.MetricSet      `json:"n1ql"`
 	System    system.MetricSet    `json:"system"`
 	FTS       fts.MetricSet       `json:"fts"`
+	Eventing  eventing.MetricSet  `json:"eventing"`
 }
 
 //go:embed defaultMetricSet.json

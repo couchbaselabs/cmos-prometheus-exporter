@@ -16,6 +16,7 @@ import (
 	"github.com/markspolakovs/yacpe/pkg/config"
 	"github.com/markspolakovs/yacpe/pkg/couchbase"
 	"github.com/markspolakovs/yacpe/pkg/metrics"
+	"github.com/markspolakovs/yacpe/pkg/metrics/eventing"
 	"github.com/markspolakovs/yacpe/pkg/metrics/fts"
 	"github.com/markspolakovs/yacpe/pkg/metrics/gsi"
 	"github.com/markspolakovs/yacpe/pkg/metrics/memcached"
@@ -108,6 +109,18 @@ func main() {
 	if hasFTS {
 		ftsCollector := fts.NewCollector(logger.Sugar().Named("fts"), node, ms.FTS, cfg.FakeCollections)
 		reg.MustRegister(ftsCollector)
+	}
+
+	hasEventing, err := node.HasService(cbrest.ServiceEventing)
+	if err != nil {
+		logger.Sugar().Fatalw("Failed to check Eventing", "err", err)
+	}
+	if hasEventing {
+		eventingCollector, err := eventing.NewCollector(logger.Sugar().Named("eventing"), node, ms.Eventing)
+		if err != nil {
+			logger.Sugar().Fatalw("Failed to create Eventing collector", "err", err)
+		}
+		reg.MustRegister(eventingCollector)
 	}
 
 	http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
