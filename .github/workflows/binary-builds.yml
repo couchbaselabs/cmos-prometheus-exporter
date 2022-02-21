@@ -29,5 +29,5 @@ jobs:
     - name: Upload Build Artifact
       uses: actions/upload-artifact@v2.2.4
       with:
-        name: yacpe-${{ matrix.os }}-amd64*
+        name: yacpe-${{ matrix.os }}-amd64
         path: build/*
