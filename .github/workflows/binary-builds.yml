@@ -9,9 +9,7 @@ jobs:
   build:
     strategy:
       matrix:
-        # build and publish in parallel: linux/386, linux/amd64, windows/386, windows/amd64, darwin/amd64 
         os: [ubuntu-latest, macos-latest, windows-latest]
-        goarch: [amd64]
         
     runs-on: ${{ matrix.os }}
     
@@ -26,10 +24,10 @@ jobs:
     - name: Build binary
       run: |
         mkdir build
-        GOARCh=${{ matrix.goarch }} go build -o ./build/yacpe-$(git rev-parse --short HEAD)-${{ matrix.os }}-${{ matrix.goarch }} -tags osusergo,netgo ./cmd/yacpe
+        go build -o ./build/yacpe-$(git rev-parse --short HEAD)-${{ matrix.os }}-amd64 -tags osusergo,netgo ./cmd/yacpe
     
     - name: Upload Build Artifact
       uses: actions/upload-artifact@v2.2.4
       with:
-        name: yacpe-${{ matrix.os }}-${{ matrix.goarch }}
+        name: yacpe-${{ matrix.os }}-amd64*
         path: build/*
