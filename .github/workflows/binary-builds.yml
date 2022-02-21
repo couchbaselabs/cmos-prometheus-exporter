@@ -24,7 +24,8 @@ jobs:
     - name: Build binary
       run: |
         mkdir build
-        go build -o ./build/yacpe-$(git rev-parse --short HEAD)-${{ matrix.os }}-amd64 -tags osusergo,netgo ./cmd/yacpe
+        $GOROOT/bin/go build -o ./build/yacpe-$(git rev-parse --short HEAD)-${{ matrix.os }}-amd64 -tags osusergo,netgo ./cmd/yacpe
+      shell: bash
     
     - name: Upload Build Artifact
       uses: actions/upload-artifact@v2.2.4
