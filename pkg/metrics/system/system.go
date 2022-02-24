@@ -49,9 +49,9 @@ type Collector struct {
 	sigar  *sigar.ConcreteSigar
 	ms     MetricSet
 
-	latestCpu sigar.Cpu
-	ctx       context.Context
-	cancel    context.CancelFunc
+	latestCPUStats sigar.Cpu
+	ctx            context.Context //nolint:containedctx
+	cancel         context.CancelFunc
 }
 
 func (c *Collector) Close() error {
@@ -123,20 +123,23 @@ func (c *Collector) prepareMetrics() {
 }
 
 func (c *Collector) cpuMetrics(metrics chan<- prometheus.Metric) {
+	if c.latestCPUStats.Total() == 0 {
+		return
+	}
 	if m, ok := c.ms[cpuUtilization]; ok {
-		metrics <- prometheus.MustNewConstMetric(m.desc, prometheus.UntypedValue, float64(c.latestCpu.Total()))
+		metrics <- prometheus.MustNewConstMetric(m.desc, prometheus.UntypedValue, (1-float64(c.latestCPUStats.Idle)/float64(c.latestCPUStats.Total()))*100)
 	}
 	if m, ok := c.ms[cpuUser]; ok {
-		metrics <- prometheus.MustNewConstMetric(m.desc, prometheus.UntypedValue, float64(c.latestCpu.User))
+		metrics <- prometheus.MustNewConstMetric(m.desc, prometheus.UntypedValue, float64(c.latestCPUStats.User)/float64(c.latestCPUStats.Total())*100)
 	}
 	if m, ok := c.ms[cpuSys]; ok {
-		metrics <- prometheus.MustNewConstMetric(m.desc, prometheus.UntypedValue, float64(c.latestCpu.Sys))
+		metrics <- prometheus.MustNewConstMetric(m.desc, prometheus.UntypedValue, float64(c.latestCPUStats.Sys)/float64(c.latestCPUStats.Total())*100)
 	}
 	if m, ok := c.ms[cpuIrq]; ok {
-		metrics <- prometheus.MustNewConstMetric(m.desc, prometheus.UntypedValue, float64(c.latestCpu.Irq))
+		metrics <- prometheus.MustNewConstMetric(m.desc, prometheus.UntypedValue, float64(c.latestCPUStats.Irq)/float64(c.latestCPUStats.Total())*100)
 	}
 	if m, ok := c.ms[cpuStolen]; ok {
-		metrics <- prometheus.MustNewConstMetric(m.desc, prometheus.UntypedValue, float64(c.latestCpu.Stolen))
+		metrics <- prometheus.MustNewConstMetric(m.desc, prometheus.UntypedValue, float64(c.latestCPUStats.Stolen)/float64(c.latestCPUStats.Total())*100)
 	}
 	if m, ok := c.ms[cpuCoresAvailable]; ok {
 		metrics <- prometheus.MustNewConstMetric(m.desc, prometheus.UntypedValue, float64(runtime.NumCPU()))
@@ -151,7 +154,7 @@ func (c *Collector) pumpCpu() {
 	for {
 		select {
 		case val := <-cpuCh:
-			c.latestCpu = val
+			c.latestCPUStats = val
 		case <-c.ctx.Done():
 			close(stop)
 			return
