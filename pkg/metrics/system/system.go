@@ -1,6 +1,7 @@
 package system
 
 import (
+	"context"
 	"runtime"
 	"time"
 
@@ -47,14 +48,27 @@ type Collector struct {
 	logger *zap.SugaredLogger
 	sigar  *sigar.ConcreteSigar
 	ms     MetricSet
+
+	latestCpu sigar.Cpu
+	ctx       context.Context
+	cancel    context.CancelFunc
+}
+
+func (c *Collector) Close() error {
+	c.cancel()
+	<-c.ctx.Done()
+	return nil
 }
 
 func NewSystemMetrics(logger *zap.SugaredLogger, ms MetricSet) *Collector {
-	return &Collector{
+	c := &Collector{
 		logger: logger,
 		ms:     ms,
 		sigar:  new(sigar.ConcreteSigar),
 	}
+	c.ctx, c.cancel = context.WithCancel(context.Background())
+	go c.pumpCpu()
+	return c
 }
 
 func (c *Collector) Describe(descs chan<- *prometheus.Desc) {
@@ -67,6 +81,11 @@ func (c *Collector) Describe(descs chan<- *prometheus.Desc) {
 }
 
 func (c *Collector) Collect(metrics chan<- prometheus.Metric) {
+	start := time.Now()
+	c.logger.Debug("Starting collection")
+	defer func() {
+		c.logger.Debugw("Collection complete.", "took", time.Since(start))
+	}()
 	c.memMetrics(metrics)
 	c.cpuMetrics(metrics)
 }
@@ -104,26 +123,38 @@ func (c *Collector) prepareMetrics() {
 }
 
 func (c *Collector) cpuMetrics(metrics chan<- prometheus.Metric) {
-	cpuCh, stop := c.sigar.CollectCpuStats(time.Second)
-	// we only care about the first
-	close(stop)
-	cpu := <-cpuCh
 	if m, ok := c.ms[cpuUtilization]; ok {
-		metrics <- prometheus.MustNewConstMetric(m.desc, prometheus.UntypedValue, float64(cpu.Total()))
+		metrics <- prometheus.MustNewConstMetric(m.desc, prometheus.UntypedValue, float64(c.latestCpu.Total()))
 	}
 	if m, ok := c.ms[cpuUser]; ok {
-		metrics <- prometheus.MustNewConstMetric(m.desc, prometheus.UntypedValue, float64(cpu.User))
+		metrics <- prometheus.MustNewConstMetric(m.desc, prometheus.UntypedValue, float64(c.latestCpu.User))
 	}
 	if m, ok := c.ms[cpuSys]; ok {
-		metrics <- prometheus.MustNewConstMetric(m.desc, prometheus.UntypedValue, float64(cpu.Sys))
+		metrics <- prometheus.MustNewConstMetric(m.desc, prometheus.UntypedValue, float64(c.latestCpu.Sys))
 	}
 	if m, ok := c.ms[cpuIrq]; ok {
-		metrics <- prometheus.MustNewConstMetric(m.desc, prometheus.UntypedValue, float64(cpu.Irq))
+		metrics <- prometheus.MustNewConstMetric(m.desc, prometheus.UntypedValue, float64(c.latestCpu.Irq))
 	}
 	if m, ok := c.ms[cpuStolen]; ok {
-		metrics <- prometheus.MustNewConstMetric(m.desc, prometheus.UntypedValue, float64(cpu.Stolen))
+		metrics <- prometheus.MustNewConstMetric(m.desc, prometheus.UntypedValue, float64(c.latestCpu.Stolen))
 	}
 	if m, ok := c.ms[cpuCoresAvailable]; ok {
 		metrics <- prometheus.MustNewConstMetric(m.desc, prometheus.UntypedValue, float64(runtime.NumCPU()))
+	}
+}
+
+func (c *Collector) pumpCpu() {
+	period := time.Second
+	cpuCh, stop := c.sigar.CollectCpuStats(period)
+	// we only care about the *second* value, as it'll be the delta
+	_ = <-cpuCh
+	for {
+		select {
+		case val := <-cpuCh:
+			c.latestCpu = val
+		case <-c.ctx.Done():
+			close(stop)
+			return
+		}
 	}
 }
