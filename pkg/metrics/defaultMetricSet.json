@@ -145,19 +145,31 @@
       },
       "kv_curr_connections": {
         "group": "",
-        "pattern": "^curr_connections$"
+        "pattern": "^curr_connections$",
+        "labels": [
+          "bucket"
+        ]
       },
       "kv_daemon_connections": {
         "group": "",
-        "pattern": "^daemon_connections$"
+        "pattern": "^daemon_connections$",
+        "labels": [
+          "bucket"
+        ]
       },
       "kv_system_connections": {
         "group": "",
-        "pattern": "^system_connections$"
+        "pattern": "^system_connections$",
+        "labels": [
+          "bucket"
+        ]
       },
       "kv_total_connections": {
         "group": "",
-        "pattern": "^total_connections$"
+        "pattern": "^total_connections$",
+        "labels": [
+          "bucket"
+        ]
       },
       "kv_collection_mem_used_bytes": {
         "group": "",
