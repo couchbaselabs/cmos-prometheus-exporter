@@ -318,8 +318,7 @@ func (m *Metrics) resolveLabelValues(bucket string, metric *internalStat, match 
 			}
 		default:
 			if metric.exp.SubexpIndex(label) == -1 {
-				m.logger.Error("Missing sub-expression for label match", zap.String("label", label), zap.Strings("match", match), zap.String("metric", metric.name))
-				continue
+				m.logger.Warn("Missing sub-expression for label match", zap.String("label", label), zap.Strings("match", match), zap.String("metric", metric.name))
 			}
 			labelValues[i] = transformFn(match[metric.exp.SubexpIndex(label)])
 		}
