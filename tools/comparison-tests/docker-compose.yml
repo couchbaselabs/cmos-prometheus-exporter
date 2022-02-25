@@ -2,15 +2,15 @@ version: '3.8'
 services:
   cb6:
     image: couchbase/server-sandbox:6.6.0
-  yacpe:
+  exporter:
     build:
       context: ../..
     depends_on: [cb6]
     ports:
       - '9091:9091'
     volumes:
-      - ./yacpe.yml:/yacpe.yml
-      - ./yacpe-entrypoint.sh:/entrypoint.sh
+      - ./cmos-exporter.yml:/etc/cmos-exporter/cmos-exporter.yml
+      - ./exporter-entrypoint.sh:/entrypoint.sh
     entrypoint: '/entrypoint.sh'
   cb7:
     image: couchbase/server-sandbox:7.0.1
@@ -18,7 +18,7 @@ services:
       - '8091:8091'
   prom:
     image: prom/prometheus
-    depends_on: [cb7, yacpe]
+    depends_on: [cb7, exporter]
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     ports:

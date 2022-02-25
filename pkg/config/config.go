@@ -38,14 +38,14 @@ func Read(path string) (*Config, error) {
 	viper.SetDefault("fake_collections", true)
 	viper.SetDefault("log_level", "info")
 
-	viper.SetConfigName("yacpe")
+	viper.SetConfigName("cmos-exporter")
 	viper.SetConfigType("yaml")
 
-	viper.SetEnvPrefix("YACPE")
+	viper.SetEnvPrefix("CMOS_EXPORTER")
 	viper.AutomaticEnv()
 
-	_ = viper.BindEnv("couchbase_username", "COUCHBASE_OPERATOR_USER", "YACPE_COUCHBASE_USERNAME")
-	_ = viper.BindEnv("couchbase_password", "COUCHBASE_OPERATOR_PASS", "YACPE_COUCHBASE_PASSWORD")
+	_ = viper.BindEnv("couchbase_username", "COUCHBASE_OPERATOR_USER", "CMOS_EXPORTER_COUCHBASE_USERNAME")
+	_ = viper.BindEnv("couchbase_password", "COUCHBASE_OPERATOR_PASS", "CMOS_EXPORTER_COUCHBASE_PASSWORD")
 
 	//nolint:nestif
 	if path != "" {
@@ -58,8 +58,7 @@ func Read(path string) (*Config, error) {
 			return nil, fmt.Errorf("failed to read non-default config: %w", err)
 		}
 	} else {
-		viper.AddConfigPath("/etc/yacpe")
-		viper.AddConfigPath("$HOME/.yacpe")
+		viper.AddConfigPath("/etc/cmos-exporter")
 		viper.AddConfigPath(".")
 		if err := viper.ReadInConfig(); err != nil {
 			if _, ok := err.(viper.ConfigFileNotFoundError); !ok {

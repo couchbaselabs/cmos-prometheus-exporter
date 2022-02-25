@@ -4,7 +4,7 @@ const compare = require("./compare");
     const results = await compare.default({
         prometheusBaseUrl: "http://localhost:9090",
         baseLabelQuery: `{job="cb7"}`,
-        targetLabelQuery: `{job="yacpe"}`
+        targetLabelQuery: `{job="test"}`
     });
 
     console.log(compare.formatMarkdown(results));

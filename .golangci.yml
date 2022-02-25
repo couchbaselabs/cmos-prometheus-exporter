@@ -76,4 +76,4 @@ linters-settings:
     exclude-functions:
       - (*go.uber.org/zap.Logger).Sync
   goimports:
-    local-prefixes: github.com/markspolakovs/yacpe
+    local-prefixes: github.com/couchbaselabs/cmos-prometheus-exporter

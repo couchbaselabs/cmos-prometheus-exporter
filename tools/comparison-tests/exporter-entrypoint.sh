@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 apk add curl
 
@@ -45,4 +45,4 @@ wait_for_url 30 "http://cb6:8091/ui"
 
 sleep 10
 
-exec /yacpe
+exec /usr/bin/cmos-exporter

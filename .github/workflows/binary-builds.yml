@@ -24,11 +24,11 @@ jobs:
     - name: Build binary
       run: |
         mkdir build
-        $GOROOT/bin/go build -o ./build/yacpe-$(git rev-parse --short HEAD)-${{ matrix.os }}-amd64 -tags osusergo,netgo ./cmd/yacpe
+        $GOROOT/bin/go build -o ./build/cmos-exporter-$(git rev-parse --short HEAD)-${{ matrix.os }}-amd64 -tags osusergo,netgo ./cmd/cmos-exporter
       shell: bash
     
     - name: Upload Build Artifact
       uses: actions/upload-artifact@v2.2.4
       with:
-        name: yacpe-${{ matrix.os }}-amd64
+        name: cmos-exporter-${{ matrix.os }}-amd64
         path: build/*

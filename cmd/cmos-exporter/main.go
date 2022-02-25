@@ -13,15 +13,15 @@ import (
 	jww "github.com/spf13/jwalterweatherman"
 	"go.uber.org/zap"
 
-	"github.com/markspolakovs/yacpe/pkg/config"
-	"github.com/markspolakovs/yacpe/pkg/couchbase"
-	"github.com/markspolakovs/yacpe/pkg/metrics"
-	"github.com/markspolakovs/yacpe/pkg/metrics/eventing"
-	"github.com/markspolakovs/yacpe/pkg/metrics/fts"
-	"github.com/markspolakovs/yacpe/pkg/metrics/gsi"
-	"github.com/markspolakovs/yacpe/pkg/metrics/memcached"
-	"github.com/markspolakovs/yacpe/pkg/metrics/n1ql"
-	"github.com/markspolakovs/yacpe/pkg/metrics/system"
+	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/config"
+	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/couchbase"
+	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/metrics"
+	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/metrics/eventing"
+	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/metrics/fts"
+	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/metrics/gsi"
+	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/metrics/memcached"
+	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/metrics/n1ql"
+	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/metrics/system"
 )
 
 var flagConfigPath = flag.String("config-file", "", "path to read config from (leave blank to use defaults)")
@@ -31,7 +31,7 @@ func main() {
 
 	// Set up JWW (used by Viper).
 	// Sadly this won't get us nice JSON logging :(
-	jww.SetStdoutThreshold(jww.LevelTrace)
+	jww.SetStdoutThreshold(jww.LevelDebug)
 
 	cfg, err := config.Read(*flagConfigPath)
 	if err != nil {

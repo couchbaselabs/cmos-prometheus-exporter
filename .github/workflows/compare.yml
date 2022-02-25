@@ -23,7 +23,7 @@ jobs:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         prometheus-base-url: http://localhost:9090
         base-label-query: '{job="cb7"}'
-        target-label-query: '{job="yacpe"}'
+        target-label-query: '{job="test"}'
     - name: Clean up
       run: docker compose down
       working-directory: tools/comparison-tests

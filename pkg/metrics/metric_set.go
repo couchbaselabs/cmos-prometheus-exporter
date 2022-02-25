@@ -7,12 +7,12 @@ import (
 
 	"github.com/creasty/defaults"
 
-	"github.com/markspolakovs/yacpe/pkg/metrics/eventing"
-	"github.com/markspolakovs/yacpe/pkg/metrics/fts"
-	"github.com/markspolakovs/yacpe/pkg/metrics/gsi"
-	"github.com/markspolakovs/yacpe/pkg/metrics/memcached"
-	"github.com/markspolakovs/yacpe/pkg/metrics/n1ql"
-	"github.com/markspolakovs/yacpe/pkg/metrics/system"
+	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/metrics/eventing"
+	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/metrics/fts"
+	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/metrics/gsi"
+	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/metrics/memcached"
+	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/metrics/n1ql"
+	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/metrics/system"
 )
 
 type MetricSet struct {

@@ -1,4 +1,4 @@
-module github.com/markspolakovs/yacpe
+module github.com/couchbaselabs/cmos-prometheus-exporter
 
 go 1.17
 

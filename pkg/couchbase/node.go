@@ -9,6 +9,8 @@ import (
 	"github.com/couchbase/tools-common/aprov"
 	"github.com/couchbase/tools-common/cbrest"
 	"go.uber.org/zap"
+
+	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/meta"
 )
 
 type Node struct {
@@ -30,7 +32,7 @@ func (n *Node) Close() error {
 
 func BootstrapNode(logger *zap.SugaredLogger, node, username, password string, mgmtPort int) (*Node, error) {
 	creds := &aprov.Static{
-		UserAgent: "yacpe/0.0.1",
+		UserAgent: fmt.Sprintf("cmos-exporter/%s", meta.Version),
 		Username:  username,
 		Password:  password,
 	}

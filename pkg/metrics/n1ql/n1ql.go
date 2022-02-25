@@ -12,8 +12,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
-	"github.com/markspolakovs/yacpe/pkg/couchbase"
-	"github.com/markspolakovs/yacpe/pkg/metrics/common"
+	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/couchbase"
+	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/metrics/common"
 )
 
 type Metric struct {
