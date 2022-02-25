@@ -95,6 +95,79 @@
           "bucket"
         ]
       },
+      "kv_dcp_items_remaining": {
+        "group": "dcpagg :",
+        "pattern": "^(?P<connection_type>[^:]*):items_remaining$",
+        "labels":  [
+          "bucket",
+          "connection_type"
+        ]
+      },
+      "kv_dcp_items_sent": {
+        "group": "dcpagg :",
+        "pattern": "^(?P<connection_type>[^:]*):items_sent$",
+        "labels":  [
+          "bucket",
+          "connection_type"
+        ]
+      },
+      "kv_dcp_backoff": {
+        "group": "dcpagg :",
+        "pattern": "^(?P<connection_type>[^:]*):backoff$",
+        "labels":  [
+          "bucket",
+          "connection_type"
+        ]
+      },
+      "kv_dcp_producer_count": {
+        "group": "dcpagg :",
+        "pattern": "^(?P<connection_type>[^:]*):producer_count$",
+        "labels":  [
+          "bucket",
+          "connection_type"
+        ]
+      },
+      "kv_dcp_total_data_size_bytes": {
+        "group": "dcpagg :",
+        "pattern": "^(?P<connection_type>[^:]*):total_bytes$",
+        "labels":  [
+          "bucket",
+          "connection_type"
+        ]
+      },
+      "kv_dcp_total_uncompressed_data_size_bytes": {
+        "group": "dcpagg :",
+        "pattern": "^(?P<connection_type>[^:]*):total_uncompressed_data_size$",
+        "labels":  [
+          "bucket",
+          "connection_type"
+        ]
+      },
+      "kv_curr_connections": {
+        "group": "",
+        "pattern": "^curr_connections$"
+      },
+      "kv_daemon_connections": {
+        "group": "",
+        "pattern": "^daemon_connections$"
+      },
+      "kv_system_connections": {
+        "group": "",
+        "pattern": "^system_connections$"
+      },
+      "kv_total_connections": {
+        "group": "",
+        "pattern": "^total_connections$"
+      },
+      "kv_collection_mem_used_bytes": {
+        "group": "",
+        "pattern": "^mem_used$",
+        "labels": [
+          "bucket",
+          "scope",
+          "collection"
+        ]
+      },
       "kv_uptime_seconds": {
         "group": "",
         "pattern": "^uptime$",

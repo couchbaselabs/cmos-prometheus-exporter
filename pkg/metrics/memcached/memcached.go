@@ -313,10 +313,14 @@ func (m *Metrics) resolveLabelValues(bucket string, metric *internalStat, match 
 		case "collection":
 			if m.FakeCollections {
 				labelValues[i] = transformFn("_default")
-			} else {
+			} else if metric.exp.SubexpIndex(label) > 0 {
 				labelValues[i] = transformFn(match[metric.exp.SubexpIndex(label)])
 			}
 		default:
+			if metric.exp.SubexpIndex(label) == -1 {
+				m.logger.Error("Missing sub-expression for label match", zap.String("label", label), zap.Strings("match", match), zap.String("metric", metric.name))
+				continue
+			}
 			labelValues[i] = transformFn(match[metric.exp.SubexpIndex(label)])
 		}
 	}
