@@ -67,7 +67,7 @@ func NewSystemMetrics(logger *zap.SugaredLogger, ms MetricSet) *Collector {
 		sigar:  new(sigar.ConcreteSigar),
 	}
 	c.ctx, c.cancel = context.WithCancel(context.Background())
-	go c.pumpCpu()
+	go c.pumpCPU()
 	return c
 }
 
@@ -146,7 +146,7 @@ func (c *Collector) cpuMetrics(metrics chan<- prometheus.Metric) {
 	}
 }
 
-func (c *Collector) pumpCpu() {
+func (c *Collector) pumpCPU() {
 	period := time.Second
 	cpuCh, stop := c.sigar.CollectCpuStats(period)
 	// we only care about the *second* value, as it'll be the delta
