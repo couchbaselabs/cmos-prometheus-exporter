@@ -163,9 +163,9 @@ func (m *Metrics) doXDCRRequest(endpoint string) ([]byte, error) {
 	if m.node.RestClient().TLS() {
 		scheme = "https://"
 	}
-	xdcrUrlPrefix := scheme + hostname + ":" + strconv.Itoa(xdcrRestPort)
+	xdcrURLPrefix := scheme + hostname + ":" + strconv.Itoa(xdcrRestPort)
 
-	url := xdcrUrlPrefix + endpoint
+	url := xdcrURLPrefix + endpoint
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create XDCR request to %s: %w", url, err)
