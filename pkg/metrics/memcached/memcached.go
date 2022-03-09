@@ -15,6 +15,7 @@ import (
 	memcached "github.com/couchbase/gomemcached/client"
 	"github.com/couchbase/tools-common/cbrest"
 	"github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 
 	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/couchbase"
@@ -116,6 +117,7 @@ type Metrics struct {
 	ms              MetricSet
 	mux             sync.Mutex
 	logger          *zap.Logger
+	opaqueInc       *atomic.Uint32
 }
 
 func (m *Metrics) Describe(_ chan<- *prometheus.Desc) {
@@ -346,10 +348,11 @@ func NewMemcachedMetrics(logger *zap.Logger, node couchbase.NodeCommon, metricSe
 		return nil, err
 	}
 	ret := &Metrics{
-		node:     node,
-		mc:       mc,
-		hostPort: hostPort,
-		logger:   logger,
+		node:      node,
+		mc:        mc,
+		hostPort:  hostPort,
+		logger:    logger,
+		opaqueInc: atomic.NewUint32(0),
 	}
 	if err = ret.updateMetricSet(metricSet); err != nil {
 		return nil, err

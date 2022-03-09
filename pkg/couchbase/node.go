@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 
 	"github.com/couchbase/tools-common/aprov"
 	"github.com/couchbase/tools-common/cbrest"
@@ -65,9 +66,10 @@ func (n *Node) Credentials() (string, string) {
 
 func (n *Node) updateClusterConfig() error {
 	res, err := n.rest.Do(context.TODO(), &cbrest.Request{
-		Method:   "GET",
-		Endpoint: cbrest.EndpointNodesServices,
-		Service:  cbrest.ServiceManagement,
+		Method:             "GET",
+		Endpoint:           cbrest.EndpointNodesServices,
+		Service:            cbrest.ServiceManagement,
+		ExpectedStatusCode: http.StatusOK,
 	})
 	if err != nil {
 		return err

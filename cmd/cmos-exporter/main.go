@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"net"
 	"net/http"
 
 	goutilslog "github.com/couchbase/goutils/logging"
@@ -22,6 +23,7 @@ import (
 	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/metrics/memcached"
 	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/metrics/n1ql"
 	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/metrics/system"
+	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/metrics/xdcr"
 )
 
 var flagConfigPath = flag.String("config-file", "", "path to read config from (leave blank to use defaults)")
@@ -31,7 +33,7 @@ func main() {
 
 	// Set up JWW (used by Viper).
 	// Sadly this won't get us nice JSON logging :(
-	jww.SetStdoutThreshold(jww.LevelDebug)
+	jww.SetStdoutThreshold(jww.LevelInfo)
 
 	cfg, err := config.Read(*flagConfigPath)
 	if err != nil {
@@ -45,7 +47,7 @@ func main() {
 	logger, _ := logCfg.Build()
 	defer logger.Sync()
 
-	logger.Debug("Loaded config", zap.Object("cfg", cfg))
+	logger.Debug("Started & configured logging", zap.Object("cfg", cfg))
 
 	toolscommonlog.SetLogger(&config.CBLogZapLogger{Logger: logger.WithOptions(zap.AddCallerSkip(3)).Named("cb").Sugar()})
 	goutilslog.SetLogger(&config.GoUtilsZapLogger{Logger: logger.WithOptions(zap.AddCallerSkip(2)).Named(
@@ -62,6 +64,29 @@ func main() {
 
 	sys := system.NewSystemMetrics(logger.Named("system").Sugar(), ms.System)
 	reg.MustRegister(sys)
+	logger.Info("Registered system collector")
+
+	nodeIP := net.ParseIP(cfg.CouchbaseHost)
+	if nodeIP == nil {
+		ips, err := net.LookupIP(cfg.CouchbaseHost)
+		if err != nil {
+			logger.Fatal("Failed to look up the host IP", zap.String("host", cfg.CouchbaseHost), zap.Error(err))
+		}
+		if len(ips) == 0 {
+			logger.Fatal("Found no IPs for host", zap.String("host", cfg.CouchbaseHost))
+		}
+		nodeIP = ips[0]
+	}
+	if nodeIP != nil && nodeIP.IsLoopback() {
+		xdcrColl, err := xdcr.NewXDCRMetrics(logger.Named("xdcr").Sugar(), node, ms.XDCR)
+		if err != nil {
+			logger.Sugar().Fatalw("Failed to create XDCR collector", "err", err)
+		}
+		reg.MustRegister(xdcrColl)
+		logger.Info("Registered XDCR collector")
+	} else {
+		logger.Warn("Node hostname is not loopback - XDCR metrics are only available when running on localhost")
+	}
 
 	hasKV, err := node.HasService(cbrest.ServiceData)
 	if err != nil {
@@ -76,6 +101,7 @@ func main() {
 		// TODO: we need to add scope/collection labels to the various metrics
 		// mc.FakeCollections = cfg.FakeCollections
 		reg.MustRegister(mc)
+		logger.Info("Registered memcached collector")
 	}
 
 	hasGSI, err := node.HasService(cbrest.ServiceGSI)
@@ -88,6 +114,7 @@ func main() {
 			logger.Sugar().Fatalw("Failed to create GSI collector", "err", err)
 		}
 		reg.MustRegister(gsiCollector)
+		logger.Info("Registered GSI collector")
 	}
 
 	hasN1QL, err := node.HasService(cbrest.ServiceQuery)
@@ -100,6 +127,7 @@ func main() {
 			logger.Sugar().Fatalw("Failed to create N1QL collector", "err", err)
 		}
 		reg.MustRegister(n1qlCollector)
+		logger.Info("Registered N1QL collector")
 	}
 
 	hasFTS, err := node.HasService(cbrest.ServiceSearch)
@@ -109,6 +137,7 @@ func main() {
 	if hasFTS {
 		ftsCollector := fts.NewCollector(logger.Sugar().Named("fts"), node, ms.FTS, cfg.FakeCollections)
 		reg.MustRegister(ftsCollector)
+		logger.Info("Registered FTS collector")
 	}
 
 	hasEventing, err := node.HasService(cbrest.ServiceEventing)
@@ -121,6 +150,7 @@ func main() {
 			logger.Sugar().Fatalw("Failed to create Eventing collector", "err", err)
 		}
 		reg.MustRegister(eventingCollector)
+		logger.Info("Registered Eventing collector")
 	}
 
 	http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))

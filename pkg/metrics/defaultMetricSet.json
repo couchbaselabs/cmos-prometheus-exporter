@@ -739,5 +739,272 @@
       "labels": ["functionName"],
       "expression": ".[] | [.execution_stats.timer_msg_counter, .function_name]"
     }
+  },
+  "xdcr": {
+    "xdcr_changes_left_total": {
+      "name": "changes_left",
+      "type": "counter",
+      "help": "Given the VBs of this node, the number of seqnos that need to be processed (either replicated or handled) before catching up to the high sequence numbers for the VBs."
+    },
+    "xdcr_add_docs_written_total": {
+      "name": "add_docs_written",
+      "type": "counter",
+      "help": "Number of adds successfully written to target, meaning that target does not have the identical doc by name."
+    },
+    "xdcr_expiry_failed_cr_source_total": {
+      "name": "expiry_failed_cr_source",
+      "type": "counter",
+      "help": "Subset of the number of documents that failed source-side conflict resolution that specifically had expiry flag set."
+    },
+    "xdcr_deletion_filtered_total": {
+      "name": "deletion_filtered",
+      "type": "counter",
+      "help": "Number of documents filtered that was of a DCP deletion."
+    },
+    "xdcr_docs_written_total": {
+      "name": "docs_written",
+      "type": "counter",
+      "help": "Number of docs written/sent to target cluster."
+    },
+    "xdcr_deletion_docs_written_total": {
+      "name": "deletion_docs_written",
+      "type": "counter",
+      "help": "Number of deletion written to target."
+    },
+    "xdcr_add_docs_cas_changed_total": {
+      "name": "add_docs_cas_changed",
+      "type": "counter",
+      "help": "Number of add failed because target cas changed."
+    },
+    "xdcr_deletion_failed_cr_source_total": {
+      "name": "deletion_failed_cr_source",
+      "type": "counter",
+      "help": "Subset of the number of documents that failed source-side conflict resolution that were delete operations."
+    },
+    "xdcr_time_committing_seconds": {
+      "name": "time_committing",
+      "type": "gauge",
+      "help": "The rolling average amount of time it takes for a checkpoint operation to complete."
+    },
+    "xdcr_docs_checked_total": {
+      "name": "docs_checked",
+      "type": "gauge",
+      "help": "Across VBs for this node, the sum of all seqnos that have been considered to be checkpointed."
+    },
+    "xdcr_data_replicated_bytes": {
+      "name": "data_replicated",
+      "type": "counter",
+      "help": "Amount of data replicated for a replication."
+    },
+    "xdcr_dcp_dispatch_time_seconds": {
+      "name": "dcp_dispatch_time",
+      "type": "gauge",
+      "help": "The rolling average amount of time it takes for a document to be received by XDCR from DCP, to the time it is queued up in the out nozzle ready to be sent."
+    },
+    "xdcr_set_docs_cas_changed_total": {
+      "name": "set_docs_cas_changed",
+      "type": "counter",
+      "help": "Number of set failed because target cas changed."
+    },
+    "xdcr_docs_received_from_dcp": {
+      "name": "docs_received_from_dcp",
+      "type": "counter",
+      "help": "The number of set operations received from DCP."
+    },
+    "xdcr_set_target_docs_skipped_total": {
+      "name": "set_target_docs_skipped",
+      "type": "counter",
+      "help": "Subset of the number of documents that originated from the target that were set operations."
+    },
+    "xdcr_throughput_throttle_latency_seconds": {
+      "name": "throughput_throttle_latency",
+      "type": "counter",
+      "help": "The rolling average of the latency time introduced due to throughput throttler."
+    },
+    "xdcr_expiry_docs_merge_failed_total": {
+      "name": "expiry_docs_merge_failed",
+      "type": "counter",
+      "help": "Number of conflicting expiry docs failed to merge."
+    },
+    "xdcr_set_received_from_dcp_total": {
+      "name": "set_received_from_dcp",
+      "type": "counter",
+      "help": "The subset of documents received from DCP that is a mutation (set action)."
+    },
+    "xdcr_expiry_filtered_total": {
+      "name": "expiry_filtered",
+      "type": "counter",
+      "help": "Number of documents filtered that had expiry flag set."
+    },
+    "xdcr_docs_merged_total": {
+      "name": "docs_merged",
+      "type": "counter",
+      "help": "Number of conflicting docs successfully merged."
+    },
+    "xdcr_expiry_target_docs_skipped_total": {
+      "name": "expiry_target_docs_skipped",
+      "type": "counter",
+      "help": "Subset of the number of documents that originated from the target that specifically had expiry flag set."
+    },
+    "xdcr_resp_wait_time_seconds": {
+      "name": "resp_wait_time",
+      "type": "gauge",
+      "help": "The rolling average amount of time it takes from when a MemcachedRequest is created to be ready to route to an outnozzle to the time that the response has been heard back from the target node after a successful write."
+    },
+    "xdcr_docs_failed_cr_source_total": {
+      "name": "docs_failed_cr_source",
+      "type": "counter",
+      "help": "Number of documents that was not replicated to the target due to conflict resolution evaluated on the source cluster."
+    },
+    "xdcr_expiry_merge_cas_changed_total": {
+      "name": "expiry_merge_cas_changed",
+      "type": "counter",
+      "help": "Number of expiry merges failed because source cas changed."
+    },
+    "xdcr_docs_rep_queue_total": {
+      "name": "docs_rep_queue",
+      "type": "gauge",
+      "help": "Number of documents being queued to be sent in an out nozzle."
+    },
+    "xdcr_docs_filtered_total": {
+      "name": "docs_filtered",
+      "type": "gauge",
+      "help": "Total number of documents filtered and not replicated due to any type of filtering."
+    },
+    "xdcr_set_docs_written_total": {
+      "name": "set_docs_written",
+      "type": "counter",
+      "help": "Number of sets written to target."
+    },
+    "xdcr_deletion_docs_cas_changed_total": {
+      "name": "deletion_docs_cas_changed",
+      "type": "counter",
+      "help": "Number of deletion failed because target cas changed."
+    },
+    "xdcr_throttle_latency_seconds": {
+      "name": "throttle_latency",
+      "type": "gauge",
+      "help": "The rolling average of the latency time introduced due to bandwith throttler."
+    },
+    "xdcr_expiry_received_from_dcp_total": {
+      "name": "expiry_received_from_dcp",
+      "type": "counter",
+      "help": "The subset of documents received from DCP that either 1.) Is a DCP expiration or 2) Is a document that contains an expiration time."
+    },
+    "xdcr_wtavg_meta_latency_seconds": {
+      "name": "wtavg_meta_latency",
+      "type": "gauge",
+      "help": "The rolling average amount of time it takes once a getMeta command is composed to be sent to the time the request is handled once the target node has responded."
+    },
+    "xdcr_data_merged_bytes": {
+      "name": "data_merged",
+      "type": "counter",
+      "help": "Amount of data merged for a replication."
+    },
+    "xdcr_wtavg_merge_latency_seconds": {
+      "name": "wtavg_merge_latency",
+      "type": "gauge",
+      "help": "The rolling average amount of time it takes from routing, conflict detection and resolution, to receive the acknowledgement of merge."
+    },
+    "xdcr_deletion_target_docs_skipped_total": {
+      "name": "deletion_target_docs_skipped",
+      "type": "counter",
+      "help": "Subset of the number of documents that originated from the target that were delete operations."
+    },
+    "xdcr_set_filtered_total": {
+      "name": "set_filtered",
+      "type": "counter",
+      "help": "Number of documents filtered that was of a DCP mutation."
+    },
+    "xdcr_docs_opt_repd_total": {
+      "name": "docs_opt_repd",
+      "type": "counter",
+      "help": "Number of documents optimistically replicated to the target."
+    },
+    "xdcr_wtavg_docs_latency_seconds": {
+      "name": "wtavg_docs_latency",
+      "type": "gauge",
+      "help": "The rolling average amount of time it takes for the source cluster to receive the acknowledgement of a SET_WITH_META response after the Memcached request has been composed to be processed by the XDCR outnozzle."
+    },
+    "xdcr_docs_cloned_total": {
+      "name": "docs_cloned",
+      "type": "counter",
+      "help": "The number of times a source mutation is cloned to be written to different target namespace."
+    },
+    "xdcr_expiry_docs_merged_total": {
+      "name": "expiry_docs_merged",
+      "type": "counter",
+      "help": "Number of expiry merged and written to source."
+    },
+    "xdcr_set_failed_cr_source_total": {
+      "name": "set_failed_cr_source",
+      "type": "counter",
+      "help": "Subset of the number of documents that failed source-side conflict resolution that were set operations."
+    },
+    "xdcr_num_failedckpts_total": {
+      "name": "num_failedckpts",
+      "type": "counter",
+      "help": "The number of times checkpoint operation has encountered an error since this XDCR process instance is made aware of this replication."
+    },
+    "xdcr_size_rep_queue_bytes": {
+      "name": "size_rep_queue",
+      "type": "gauge",
+      "help": "Amount of data being queued to be sent in an out nozzle."
+    },
+    "xdcr_deletion_received_from_dcp_total": {
+      "name": "deletion_received_from_dcp",
+      "type": "counter",
+      "help": "The subset of documents received from DCP that is a Delete action."
+    },
+    "xdcr_expiry_stripped_total": {
+      "name": "expiry_stripped",
+      "type": "counter",
+      "help": "Number of documents replicated that had its TTL changed to 0 before writing to target (source is unmodified)."
+    },
+    "xdcr_num_checkpoints_total": {
+      "name": "num_checkpoints",
+      "type": "counter",
+      "help": "The number of times checkpoint operation has completed successfully since this XDCR process instance is made aware of this replication."
+    },
+    "xdcr_docs_processed_total": {
+      "name": "docs_processed",
+      "type": "gauge",
+      "help": "Number of docs processed for a replication."
+    },
+    "xdcr_docs_unable_to_filter_total": {
+      "name": "docs_unable_to_filter",
+      "type": "gauge",
+      "help": "Number of documents that couldn't be filtered due to inability to parse the document through Advanced Filtering engine and were not replicated."
+    },
+    "xdcr_wtavg_get_doc_latency_seconds": {
+      "name": "wtavg_get_doc_latency",
+      "type": "gauge",
+      "help": "The rolling average amount of time it takes once a get document command is composed to be sent to the time the request is handled once the target node has responded."
+    },
+    "xdcr_target_docs_skipped_total": {
+      "name": "target_docs_skipped",
+      "type": "counter",
+      "help": "Number of documents that was not replicated to the target because they originated from the target."
+    },
+    "xdcr_expiry_docs_written_total": {
+      "name": "expiry_docs_written",
+      "type": "counter",
+      "help": "Number of expiry written to target."
+    },
+    "xdcr_datapool_failed_gets_total": {
+      "name": "datapool_failed_gets",
+      "type": "counter",
+      "help": "The total number of failed GET() operation on a reusable datapool within XDCR for the purpose of avoiding garbage generation."
+    },
+    "xdcr_dcp_datach_length_total": {
+      "name": "dcp_datach_length",
+      "type": "gauge",
+      "help": "The number of items sent by KV DCP waiting for XDCR DCP nozzle to ingest and process."
+    },
+    "xdcr_docs_merge_cas_changed_total": {
+      "name": "docs_merge_cas_changed",
+      "type": "counter",
+      "help": "Number of merges failed because source cas changed."
+    }
   }
 }
