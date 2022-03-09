@@ -2,6 +2,7 @@ package xdcr
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -9,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/couchbase/tools-common/cbrest"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
@@ -71,23 +71,18 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 	m.logger.Info("Starting XDCR collection")
 	m.mux.RLock()
 	defer m.mux.RUnlock()
-	// Get the list of all configured replications, then get the stats for each source bucket
-	repsRes, err := m.node.RestClient().Execute(&cbrest.Request{
-		Method:             http.MethodGet,
-		Service:            cbrest.ServiceManagement,
-		Endpoint:           "/pools/default/replications",
-		ExpectedStatusCode: http.StatusOK,
-		Idempotent:         true,
-	})
+
+	// cbrest doesn't let us make a request to xdcr's port, so we need to do it manually
+	data, err := m.doXDCRRequest("/pools/default/replications")
 	if err != nil {
-		m.logger.Errorw("Failed to get configured replications", "error", err)
+		m.logger.Errorw("Failed to get replications data", "error", err)
 		return
 	}
 
 	var replicationsData []struct {
 		SourceBucket string `json:"source"`
 	}
-	if err := json.Unmarshal(repsRes.Body, &replicationsData); err != nil {
+	if err := json.Unmarshal(data, &replicationsData); err != nil {
 		m.logger.Errorw("Failed to parse configured replications", "error", err)
 		return
 	}
@@ -97,57 +92,16 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 	}
 }
 
-func (m *Metrics) updateMSI(ms MetricSet) {
-	m.mux.Lock()
-	defer m.mux.Unlock()
-	alive := make(map[string]bool)
-	for key, metric := range ms {
-		existing, ok := m.msi[key]
-		if !ok {
-			existing = &metricInternal{
-				Metric: metric,
-				desc:   prometheus.NewDesc(key, metric.Help, labelNames, nil),
-			}
-		}
-		m.msi[key] = existing
-		alive[key] = true
-	}
-	for key := range m.msi {
-		if _, ok := alive[key]; !ok {
-			delete(m.msi, key)
-		}
-	}
-}
-
 func (m *Metrics) processStatsForReplication(sourceBucket string, metrics chan<- prometheus.Metric) {
-	// cbrest doesn't let us make a request to xdcr's port, so we need to do it manually
-	node := m.node.RestClient().Nodes()[0]
-	hostname := node.GetHostname(m.node.RestClient().AltAddr())
-	scheme := "http://"
-	if m.node.RestClient().TLS() {
-		scheme = "https://"
-	}
-	url := scheme + hostname + ":" + strconv.Itoa(xdcrRestPort) + "/stats/buckets/" + sourceBucket
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	body, err := m.doXDCRRequest("/stats/buckets/" + sourceBucket)
 	if err != nil {
-		m.logger.DPanicw("Failed to create XDCR request", "url", url, "error", err)
+		m.logger.Errorw("failed to get stats for %s: %w", sourceBucket, err)
 		return
 	}
-	req.SetBasicAuth(m.node.Credentials())
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		m.logger.Warnw("Failed to get stats", "bucket", sourceBucket, "url", url, "error", err)
-		return
-	}
-	defer res.Body.Close()
-	payload, err := io.ReadAll(res.Body)
-	if err != nil {
-		m.logger.Warnw("Failed to read stats", "url", url, "error", err)
-		return
-	}
+
 	var stats map[string]map[string]float64
-	if err := json.Unmarshal(payload, &stats); err != nil {
-		m.logger.Warnw("Failed to parse stats", "url", url, "error", err)
+	if err := json.Unmarshal(body, &stats); err != nil {
+		m.logger.Warnw("Failed to parse stats", "error", err)
 		return
 	}
 	for key, data := range stats {
@@ -178,4 +132,53 @@ func (m *Metrics) processStatsForReplication(sourceBucket string, metrics chan<-
 			metrics <- prometheus.MustNewConstMetric(metric.desc, metric.Type.ToPrometheus(), value, labels...)
 		}
 	}
+}
+
+func (m *Metrics) updateMSI(ms MetricSet) {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+	alive := make(map[string]bool)
+	for key, metric := range ms {
+		existing, ok := m.msi[key]
+		if !ok {
+			existing = &metricInternal{
+				Metric: metric,
+				desc:   prometheus.NewDesc(key, metric.Help, labelNames, nil),
+			}
+		}
+		m.msi[key] = existing
+		alive[key] = true
+	}
+	for key := range m.msi {
+		if _, ok := alive[key]; !ok {
+			delete(m.msi, key)
+		}
+	}
+}
+
+func (m *Metrics) doXDCRRequest(endpoint string) ([]byte, error) {
+	node := m.node.RestClient().Nodes()[0]
+	hostname := node.GetHostname(m.node.RestClient().AltAddr())
+	scheme := "http://"
+	if m.node.RestClient().TLS() {
+		scheme = "https://"
+	}
+	xdcrUrlPrefix := scheme + hostname + ":" + strconv.Itoa(xdcrRestPort)
+
+	url := xdcrUrlPrefix + endpoint
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create XDCR request to %s: %w", url, err)
+	}
+	req.SetBasicAuth(m.node.Credentials())
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to perform XDCR request to %s: %w", url, err)
+	}
+	defer res.Body.Close()
+	payload, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read data from %s: %w", url, err)
+	}
+	return payload, nil
 }
