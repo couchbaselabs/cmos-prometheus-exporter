@@ -132,9 +132,9 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 	start := time.Now()
 	defer func() {
 		end := time.Now()
-		m.logger.Debug("Completed memcached collection, took ", zap.Duration("time", end.Sub(start)))
+		m.logger.Info("Completed memcached collection", zap.Duration("elapsed", end.Sub(start)))
 	}()
-	m.logger.Debug("Starting memcached collection")
+	m.logger.Info("Starting memcached collection")
 	m.mux.Lock()
 	defer m.mux.Unlock()
 	// gomemcached doesn't have a ListBuckets method (neither does gocbcore for that matter)

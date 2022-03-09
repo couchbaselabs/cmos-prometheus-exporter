@@ -66,9 +66,9 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 	start := time.Now()
 	defer func() {
 		end := time.Now()
-		m.logger.Debug("Completed XDCR collection, took ", zap.Duration("time", end.Sub(start)))
+		m.logger.Infow("Completed XDCR collection", zap.Duration("elapsed", end.Sub(start)))
 	}()
-	m.logger.Debug("Starting XDCR collection")
+	m.logger.Info("Starting XDCR collection")
 	m.mux.RLock()
 	defer m.mux.RUnlock()
 	// Get the list of all configured replications, then get the stats for each source bucket

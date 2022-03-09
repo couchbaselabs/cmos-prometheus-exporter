@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/couchbase/tools-common/cbrest"
 	"github.com/itchyny/gojq"
@@ -60,6 +61,11 @@ func (m *Metrics) Describe(descs chan<- *prometheus.Desc) {
 }
 
 func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
+	start := time.Now()
+	m.logger.Info("Starting Eventing collection")
+	defer func() {
+		m.logger.Infow("Completed Eventing collection", "elapsed", time.Since(start))
+	}()
 	m.msiMux.RLock()
 	defer m.msiMux.RUnlock()
 	res, err := m.node.RestClient().Execute(&cbrest.Request{

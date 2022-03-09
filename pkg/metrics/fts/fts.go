@@ -62,9 +62,9 @@ var singleIndexStatRe = regexp.MustCompile(`^(?P<bucket>.+?):(?P<index>.+?):(?P<
 
 func (c *Collector) Collect(metrics chan<- prometheus.Metric) {
 	start := time.Now()
-	c.logger.Debug("Collecting FTS metrics")
+	c.logger.Info("Starting FTS collection")
 	defer func() {
-		c.logger.Debugw("FTS metrics collected", "elapsed", time.Since(start))
+		c.logger.Infow("Completed FTS collection", "elapsed", time.Since(start))
 	}()
 	c.msiMux.RLock()
 	defer c.msiMux.RUnlock()

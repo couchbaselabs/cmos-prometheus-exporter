@@ -62,9 +62,9 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 	start := time.Now()
 	defer func() {
 		end := time.Now()
-		m.logger.Debug("Completed N1QL collection, took ", zap.Duration("time", end.Sub(start)))
+		m.logger.Info("Completed N1QL collection", zap.Duration("elapsed", end.Sub(start)))
 	}()
-	m.logger.Debug("Starting N1QL collection")
+	m.logger.Info("Starting N1QL collection")
 	m.mux.Lock()
 	defer m.mux.Unlock()
 	res, err := m.node.RestClient().Do(context.TODO(), &cbrest.Request{
