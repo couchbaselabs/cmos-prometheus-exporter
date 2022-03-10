@@ -157,13 +157,15 @@ func (m *Metrics) updateMSI(ms MetricSet) {
 }
 
 func (m *Metrics) doXDCRRequest(endpoint string) ([]byte, error) {
-	node := m.node.RestClient().Nodes()[0]
-	hostname := node.GetHostname(m.node.RestClient().AltAddr())
 	scheme := "http://"
 	if m.node.RestClient().TLS() {
 		scheme = "https://"
 	}
-	xdcrURLPrefix := scheme + hostname + ":" + strconv.Itoa(xdcrRestPort)
+
+	// The XDCR admin API binds to 127.0.0.1, so we can't use the host from cbrest, because that'll only be
+	// localhost in a single-node cluster.
+	// main.go ensures that XDCR doesn't start unless the host is localhost, so this is safe.
+	xdcrURLPrefix := scheme + "localhost" + ":" + strconv.Itoa(xdcrRestPort)
 
 	url := xdcrURLPrefix + endpoint
 	req, err := http.NewRequest(http.MethodGet, url, nil)
