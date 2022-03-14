@@ -87,8 +87,13 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 		return
 	}
 
-	for _, rep := range replicationsData {
-		m.processStatsForReplication(rep.SourceBucket, metrics)
+	allSourceBuckets := make(map[string]struct{})
+	for _, replication := range replicationsData {
+		allSourceBuckets[replication.SourceBucket] = struct{}{}
+	}
+
+	for bucket := range allSourceBuckets {
+		m.processStatsForReplication(bucket, metrics)
 	}
 }
 
@@ -105,6 +110,7 @@ func (m *Metrics) processStatsForReplication(sourceBucket string, metrics chan<-
 		return
 	}
 	for key, data := range stats {
+		m.logger.Debugw("Beginning metrics map", "statsGroup", key)
 		// Key will be in the format `remote_uuid/source_bucket/remote_bucket`
 		// If this is a backfill pipeline, the UUID will be prefixed with `backfill_`.
 		parts := strings.Split(key, "/")
@@ -128,7 +134,7 @@ func (m *Metrics) processStatsForReplication(sourceBucket string, metrics chan<-
 				m.logger.Infow("Did not find XDCR metric for requested", "prometheusName", prometheusName, "statsGroup", key, "xdcrName", metric.Name)
 				continue
 			}
-			m.logger.Debugw("Mapped metric", "xdcrName", metric.Name, "desc", metric.desc, "type", metric.Type, "labels", labels, "value", value)
+			m.logger.Debugw("Mapped metric", "xdcrName", metric.Name, "desc", metric.desc, "type", metric.Type, "statsGroup", key, "labels", labels, "value", value)
 			metrics <- prometheus.MustNewConstMetric(metric.desc, metric.Type.ToPrometheus(), value, labels...)
 		}
 	}
