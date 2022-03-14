@@ -2,7 +2,7 @@ name: Build static binaries
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
 
 jobs:
 
