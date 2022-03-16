@@ -67,9 +67,9 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 	start := time.Now()
 	defer func() {
 		end := time.Now()
-		m.logger.Desugar().Debug("Completed GSI collection, took ", zap.Duration("time", end.Sub(start)))
+		m.logger.Infow("Completed GSI collection", zap.Duration("elapsed", end.Sub(start)))
 	}()
-	m.logger.Debug("Starting GSI collection")
+	m.logger.Info("Starting GSI collection")
 	res, err := m.node.RestClient().Do(context.TODO(), &cbrest.Request{
 		Method:             "GET",
 		Endpoint:           "/api/v1/stats",

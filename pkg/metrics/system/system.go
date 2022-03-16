@@ -97,9 +97,9 @@ func (c *Collector) Describe(descs chan<- *prometheus.Desc) {
 
 func (c *Collector) Collect(metrics chan<- prometheus.Metric) {
 	start := time.Now()
-	c.logger.Debug("Starting collection")
+	c.logger.Info("Starting System collection")
 	defer func() {
-		c.logger.Debugw("Collection complete.", "took", time.Since(start))
+		c.logger.Infow("Completed System collection", "elapsed", time.Since(start))
 	}()
 	c.memMetrics(metrics)
 	c.cpuMetrics(metrics)

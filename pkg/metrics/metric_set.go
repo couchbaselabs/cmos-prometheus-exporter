@@ -28,6 +28,7 @@ import (
 	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/metrics/memcached"
 	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/metrics/n1ql"
 	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/metrics/system"
+	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/metrics/xdcr"
 )
 
 type MetricSet struct {
@@ -37,6 +38,7 @@ type MetricSet struct {
 	System    system.MetricSet    `json:"system"`
 	FTS       fts.MetricSet       `json:"fts"`
 	Eventing  eventing.MetricSet  `json:"eventing"`
+	XDCR      xdcr.MetricSet      `json:"xdcr"`
 }
 
 //go:embed defaultMetricSet.json

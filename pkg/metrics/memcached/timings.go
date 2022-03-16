@@ -42,7 +42,7 @@ func (m *Metrics) processCommandTimings(metrics chan<- prometheus.Metric, bucket
 			Key:    []byte(bucket),
 			Keylen: len(bucket),
 			Extras: []byte{byte(opcode.code)},
-			Opaque: 374593, // chosen by fair dice roll, guaranteed to be random
+			Opaque: 374593 + m.opaqueInc.Inc(), // chosen by fair dice roll, guaranteed to be random
 		})
 		if err != nil {
 			return fmt.Errorf("failed to get command timings for opcode %s: %w", opcode.name, err)
