@@ -62,4 +62,5 @@ wait_for_url 30 "http://cb6:8091/ui"
 
 sleep 10
 
+echo "Starting CMOS exporter"
 exec /usr/bin/cmos-exporter

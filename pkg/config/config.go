@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"go.uber.org/zap/zapcore"
 )
@@ -32,6 +33,17 @@ type Config struct {
 	Bind                    string   `mapstructure:"bind"`
 	FakeCollections         bool     `mapstructure:"fake_collections"`
 	LogLevel                LogLevel `mapstructure:"log_level"`
+}
+
+func init() {
+	pflag.StringP("couchbase_host", "h", "localhost", "hostname of Couchbase Server")
+	pflag.IntP("couchbase_management_port", "p", 8091, "management port of Couchbase Server")
+	pflag.StringP("couchbase_user", "u", "Administrator", "username to connect to - must be Read-Only Admin")
+	pflag.StringP("couchbase_password", "P", "", "password to use")
+	pflag.BoolP("couchbase_ssl", "s", false, "whether to require TLS")
+	pflag.StringP("bind", "b", ":9091", "host:port to serve on")
+	pflag.Bool("fake_collections", false, "whether to add scope/collection labels to metrics that use them")
+	pflag.StringP("log_level", "l", "info", "level to log at")
 }
 
 func (c Config) MarshalLogObject(enc zapcore.ObjectEncoder) error {
@@ -61,6 +73,8 @@ func Read(path string) (*Config, error) {
 
 	_ = viper.BindEnv("couchbase_username", "COUCHBASE_OPERATOR_USER", "CMOS_EXPORTER_COUCHBASE_USERNAME")
 	_ = viper.BindEnv("couchbase_password", "COUCHBASE_OPERATOR_PASS", "CMOS_EXPORTER_COUCHBASE_PASSWORD")
+
+	_ = viper.BindPFlags(pflag.CommandLine)
 
 	//nolint:nestif
 	if path != "" {

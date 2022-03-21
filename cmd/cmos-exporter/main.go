@@ -16,17 +16,21 @@
 package main
 
 import (
-	"flag"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
+	"os"
+	"runtime/debug"
 
 	goutilslog "github.com/couchbase/goutils/logging"
 	"github.com/couchbase/tools-common/cbrest"
 	toolscommonlog "github.com/couchbase/tools-common/log"
+	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/meta"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	jww "github.com/spf13/jwalterweatherman"
+	"github.com/spf13/pflag"
 	"go.uber.org/zap"
 
 	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/config"
@@ -41,10 +45,40 @@ import (
 	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/metrics/xdcr"
 )
 
-var flagConfigPath = flag.String("config-file", "", "path to read config from (leave blank to use defaults)")
+var flagConfigPath = pflag.StringP("config_file", "c", "", "path to read config from (leave blank to use defaults)")
+var flagVersion = pflag.BoolP("version", "v", false, "print the version, then exit")
+
+func buildSettingsToMap(bs []debug.BuildSetting) map[string]string {
+	result := make(map[string]string, len(bs))
+	for _, val := range bs {
+		result[val.Key] = val.Value
+	}
+	return result
+}
+
+func processBuildInfo() map[string]string {
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return nil
+	}
+	settings := buildSettingsToMap(info.Settings)
+	result := make(map[string]string)
+	result["go"] = info.GoVersion
+	result["os"] = settings["GOOS"]
+	result["arch"] = settings["GOARCH"]
+	result["compiler"] = settings["-compiler"]
+	result["rev"] = settings["vcs.revision"]
+	return result
+}
 
 func main() {
-	flag.Parse()
+	buildInfo := processBuildInfo()
+	pflag.Parse()
+
+	if *flagVersion {
+		fmt.Printf("cmos-prometheus-exporter version %s (revision %s)\n", meta.Version, buildInfo["rev"])
+		os.Exit(0)
+	}
 
 	// Set up JWW (used by Viper).
 	// Sadly this won't get us nice JSON logging :(
@@ -62,7 +96,7 @@ func main() {
 	logger, _ := logCfg.Build()
 	defer logger.Sync()
 
-	logger.Debug("Started & configured logging", zap.Object("cfg", cfg))
+	logger.Debug("Started & configured logging", zap.Object("cfg", cfg), zap.String("version", meta.Version), zap.Any("buildInfo", buildInfo))
 
 	toolscommonlog.SetLogger(&config.CBLogZapLogger{Logger: logger.WithOptions(zap.AddCallerSkip(3)).Named("cb").Sugar()})
 	goutilslog.SetLogger(&config.GoUtilsZapLogger{Logger: logger.WithOptions(zap.AddCallerSkip(2)).Named(
