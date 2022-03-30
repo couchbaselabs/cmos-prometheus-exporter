@@ -9,7 +9,7 @@ require (
 	github.com/couchbase/tools-common v0.0.0-20211108155555-e46f1ebc577b
 	github.com/creasty/defaults v1.5.2
 	github.com/itchyny/gojq v0.12.7
-	github.com/prometheus/client_golang v1.11.0
+	github.com/prometheus/client_golang v1.12.1
 	github.com/spf13/jwalterweatherman v1.1.0
 	github.com/spf13/viper v1.10.1
 	github.com/stretchr/testify v1.7.1
