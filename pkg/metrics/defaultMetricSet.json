@@ -183,7 +183,7 @@
       "kv_cmd_lookup": {"group":"", "pattern": "^cmd_lookup$", "labels": ["bucket"]},
       "kv_cmd_mutation": {"group":"", "pattern": "^cmd_mutation$", "labels": ["bucket"]},
       "kv_conn_yields": {"group":"", "pattern": "^conn_yields$", "labels": ["bucket"]},
-      "kv_connection_structures": {"group":"", "pattern": "^connection_structures$", "labels": []},
+      "kv_connection_structures": {"group":"", "pattern": "^connection_structures$", "labels": [], "singleton": true},
       "kv_curr_items_tot": {"group":"", "pattern": "^curr_items_tot$", "labels": ["bucket"]},
       "kv_curr_temp_items": {"group":"", "pattern": "^curr_temp_items$", "labels": ["bucket"]},
       "kv_ep_access_scanner_num_items": {"group":"", "pattern": "^ep_access_scanner_num_items$", "labels": ["bucket"]},

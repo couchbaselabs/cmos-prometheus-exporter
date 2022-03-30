@@ -8,6 +8,7 @@ COPY . /src/
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o ./cmos-exporter -tags netgo ./cmd/cmos-exporter
 
 FROM alpine
+RUN apk add bash
 
 COPY --from=builder /src/cmos-exporter /usr/bin/cmos-exporter
 
