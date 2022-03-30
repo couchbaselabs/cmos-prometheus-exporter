@@ -200,7 +200,8 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 }
 
 func (m *Metrics) processStatGroup(metrics chan<- prometheus.Metric, bucket string, groupName string, vals map[string]string,
-	singletons map[string]struct{}) error {
+	singletons map[string]struct{},
+) error {
 	for _, metric := range m.stats[groupName] {
 		// Skip singleton metrics we've already seen
 		if metric.Singleton {
@@ -227,7 +228,8 @@ func (m *Metrics) processStatGroup(metrics chan<- prometheus.Metric, bucket stri
 }
 
 func (m *Metrics) mapValueStat(metrics chan<- prometheus.Metric, bucket string, statsValues map[string]string,
-	metric *internalStat) error {
+	metric *internalStat,
+) error {
 	for key, valStr := range statsValues {
 		if match := metric.exp.FindStringSubmatch(key); match != nil {
 			val, err := strconv.ParseFloat(valStr, 64)
@@ -249,7 +251,8 @@ func (m *Metrics) mapValueStat(metrics chan<- prometheus.Metric, bucket string, 
 }
 
 func (m *Metrics) mapHistogramStat(metrics chan<- prometheus.Metric, bucket string, vals map[string]string,
-	metric *internalStat) error {
+	metric *internalStat,
+) error {
 	matchedKeys := make([]string, 0)
 	for key := range vals {
 		if metric.exp.MatchString(key) {

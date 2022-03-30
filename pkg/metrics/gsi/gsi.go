@@ -140,7 +140,8 @@ func (m *Metrics) Collect(metrics chan<- prometheus.Metric) {
 }
 
 func NewMetrics(logger *zap.SugaredLogger, node couchbase.NodeCommon, ms MetricSet, fakeCollections bool) (*Metrics,
-	error) {
+	error,
+) {
 	ret := &Metrics{
 		node:            node,
 		msi:             make(metricSetInternal),
@@ -183,7 +184,8 @@ func (m *Metrics) updateMetricSet(ms MetricSet) {
 }
 
 func (m *Metrics) getMetricsFor(values map[string]interface{}, labels prometheus.Labels,
-	global bool) ([]prometheus.Metric, error) {
+	global bool,
+) ([]prometheus.Metric, error) {
 	result := make([]prometheus.Metric, 0, len(values))
 	for key, metric := range m.msi {
 		if (global && !metric.global) || (!global && metric.global) {
