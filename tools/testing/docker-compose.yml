@@ -1,0 +1,41 @@
+version: '3.8'
+services:
+  cb1-1:
+    image: couchbase/server:enterprise-7.0.3
+    hostname: cb1-1.local
+    entrypoint: /entrypoint/couchbase-entrypoint.sh
+    volumes:
+      - .:/entrypoint/
+    ports:
+      - "8091-8096:8091-8096"
+      - "9091:9091"
+    healthcheck:
+      test: [ "CMD", "/opt/couchbase/bin/curl", "-fsS", "-u", "Administrator:password", "localhost:8091/pools/default" ]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 2m
+  cb2-1:
+    image: couchbase/server:enterprise-7.0.3
+    hostname: cb2-1.local
+    entrypoint: /entrypoint/couchbase-entrypoint.sh
+    volumes:
+      - .:/entrypoint/
+    healthcheck:
+      test: [ "CMD", "/opt/couchbase/bin/curl", "-fsS", "-u", "Administrator:password", "localhost:8091/pools/default" ]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 5m
+
+  exporter:
+    build:
+      context: ../..
+    network_mode: service:cb1-1
+    volumes:
+      - ./cmos-exporter.yml:/etc/cmos-exporter/cmos-exporter.yml
+#      - ./exporter-entrypoint.sh:/entrypoint.sh
+#    entrypoint: '/entrypoint.sh'
+    depends_on:
+      cb1-1:
+        condition: service_healthy
