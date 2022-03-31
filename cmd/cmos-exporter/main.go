@@ -96,7 +96,9 @@ func main() {
 	logger, _ := logCfg.Build()
 	defer logger.Sync()
 
-	logger.Debug("Started & configured logging", zap.Object("cfg", cfg), zap.String("version", meta.Version), zap.Any("buildInfo", buildInfo))
+	logger.Info("Started & configured logging", zap.String("version", meta.Version), zap.Any("buildInfo", buildInfo))
+	// using zap.Object ensures we don't leak any sensitive fields, as the ObjectMarshaller will redact them
+	logger.Debug("Loaded configuration", zap.Object("cfg", cfg))
 
 	toolscommonlog.SetLogger(&config.CBLogZapLogger{Logger: logger.WithOptions(zap.AddCallerSkip(3)).Named("cb").Sugar()})
 	goutilslog.SetLogger(&config.GoUtilsZapLogger{Logger: logger.WithOptions(zap.AddCallerSkip(2)).Named(
