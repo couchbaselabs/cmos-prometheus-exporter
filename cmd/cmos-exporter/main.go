@@ -45,8 +45,10 @@ import (
 	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/metrics/xdcr"
 )
 
-var flagConfigPath = pflag.StringP("config_file", "c", "", "path to read config from (leave blank to use defaults)")
-var flagVersion = pflag.BoolP("version", "v", false, "print the version, then exit")
+var (
+	flagConfigPath = pflag.StringP("config_file", "c", "", "path to read config from (leave blank to use defaults)")
+	flagVersion    = pflag.BoolP("version", "v", false, "print the version, then exit")
+)
 
 func buildSettingsToMap(bs []debug.BuildSetting) map[string]string {
 	result := make(map[string]string, len(bs))
