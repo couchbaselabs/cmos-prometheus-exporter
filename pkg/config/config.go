@@ -49,7 +49,7 @@ func init() {
 func (c Config) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	enc.AddString("CouchbaseHost", c.CouchbaseHost)
 	enc.AddInt("CouchbaseManagementPort", c.CouchbaseManagementPort)
-	enc.AddString("CouchbaseUsername", c.CouchbaseUsername)
+	enc.AddString("CouchbaseUsername", "<ud>"+c.CouchbaseUsername+"</ud>")
 	enc.AddString("CouchbasePassword", "[PRIVATE]")
 	enc.AddBool("CouchbaseSSL", c.CouchbaseSSL)
 	enc.AddString("Bind", c.Bind)
