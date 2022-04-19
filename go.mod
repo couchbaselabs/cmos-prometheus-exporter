@@ -7,7 +7,7 @@ require (
 	github.com/couchbase/gomemcached v0.1.4
 	github.com/couchbase/goutils v0.1.2
 	github.com/couchbase/tools-common v0.0.0-20211108155555-e46f1ebc577b
-	github.com/creasty/defaults v1.5.2
+	github.com/creasty/defaults v1.6.0
 	github.com/itchyny/gojq v0.12.7
 	github.com/prometheus/client_golang v1.12.1
 	github.com/spf13/jwalterweatherman v1.1.0
