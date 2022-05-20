@@ -6,6 +6,18 @@ This is an **experimental** Prometheus exporter for Couchbase Server.
 
 Couchbase Server 7.0 adds a built-in Prometheus statistics system for [gathering stats](https://docs.couchbase.com/server/current/learn/security/roles.html#external-stats-reader) from a Couchbase Server instance. CMOS Prometheus Exporter is an experiment to determine whether it is possible to create an exporter for Couchbase Server 6.x (and possibly below) exposing the metrics in the same format as 7.x does.
 
+## Supported Metrics
+
+- [x] KV
+- [x] Indexing
+- [x] Query
+- [x] Search
+- [x] Eventing
+- [ ] Analytics
+- [x] XDCR
+  - Only supported when running on the node being monitored (`host: localhost`) 
+- [x] System
+
 ## Installation
 
 Build it from source using [Go](https://golang.org/doc/install). To run it, clone this repository and run `go run ./cmd/cmos-exporter/main.go`.
