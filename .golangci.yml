@@ -15,6 +15,7 @@ linters:
     - errname
     - errorlint
     - exhaustive
+    - exhaustruct
     - exhaustivestruct
     - exportloopref
     - forbidigo
