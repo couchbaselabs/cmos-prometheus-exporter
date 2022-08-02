@@ -1,4 +1,5 @@
-couchbase_host: localhost
+couchbase_connection_string: couchbases://localhost
+insecure_couchbase_skip_tls_verify: true
 couchbase_username: Administrator
 couchbase_password: password
 fake_collections: true

@@ -15,7 +15,11 @@
 
 package couchbase
 
-import "github.com/couchbase/tools-common/cbrest"
+import (
+	"crypto/tls"
+
+	"github.com/couchbase/tools-common/cbrest"
+)
 
 type NodeCommon interface {
 	Close() error
@@ -24,4 +28,5 @@ type NodeCommon interface {
 	GetServicePort(svc cbrest.Service) (int, error)
 	HasService(svc cbrest.Service) (bool, error)
 	Hostname() string
+	TLSConfig() *tls.Config
 }

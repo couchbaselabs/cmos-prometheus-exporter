@@ -357,7 +357,12 @@ func NewMemcachedMetrics(logger *zap.Logger, node couchbase.NodeCommon, metricSe
 	}
 	hostPort := net.JoinHostPort(node.Hostname(), strconv.Itoa(kvPort))
 	logger.Debug("Connecting to", zap.String("hostPort", hostPort))
-	mc, err := memcached.Connect("tcp", hostPort)
+	var mc *memcached.Client
+	if tlsConfig := node.TLSConfig(); tlsConfig != nil {
+		mc, err = memcached.ConnectTLS("tcp", hostPort, tlsConfig)
+	} else {
+		mc, err = memcached.Connect("tcp", hostPort)
+	}
 	if err != nil {
 		return nil, err
 	}
