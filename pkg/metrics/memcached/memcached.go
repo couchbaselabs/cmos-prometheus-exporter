@@ -39,11 +39,11 @@ import (
 
 func init() {
 	// gomemcached doesn't have names for these commands
-	gomemcached.CommandNames[gomemcached.GET_META] = "GET_META"
-	gomemcached.CommandNames[gomemcached.SET_WITH_META] = "SET_WITH_META"
-	gomemcached.CommandNames[gomemcached.ADD_WITH_META] = "ADD_WITH_META"
-	gomemcached.CommandNames[gomemcached.DELETE_WITH_META] = "DELETE_WITH_META"
-	gomemcached.CommandNames[gomemcached.SET_VBUCKET] = "SET_VBUCKET"
+	gomemcached.CommandNames[gomemcached.GET_META] = "GET_META"                 //nolint:nosnakecase
+	gomemcached.CommandNames[gomemcached.SET_WITH_META] = "SET_WITH_META"       //nolint:nosnakecase
+	gomemcached.CommandNames[gomemcached.ADD_WITH_META] = "ADD_WITH_META"       //nolint:nosnakecase
+	gomemcached.CommandNames[gomemcached.DELETE_WITH_META] = "DELETE_WITH_META" //nolint:nosnakecase
+	gomemcached.CommandNames[gomemcached.SET_VBUCKET] = "SET_VBUCKET"           //nolint:nosnakecase
 }
 
 type MetricConfig struct {

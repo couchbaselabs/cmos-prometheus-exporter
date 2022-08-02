@@ -20,7 +20,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
+	"strconv"
 
 	"github.com/couchbase/tools-common/aprov"
 	"github.com/couchbase/tools-common/cbrest"
@@ -53,7 +55,7 @@ func BootstrapNode(logger *zap.SugaredLogger, node, username, password string, m
 		Password:  password,
 	}
 	client, err := cbrest.NewClient(cbrest.ClientOptions{
-		ConnectionString: fmt.Sprintf("couchbase://%s:%d", node, mgmtPort),
+		ConnectionString: net.JoinHostPort(node, strconv.Itoa(mgmtPort)),
 		Provider:         creds,
 		TLSConfig:        nil,
 		DisableCCP:       true,
