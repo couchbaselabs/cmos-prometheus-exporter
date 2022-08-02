@@ -106,8 +106,15 @@ func main() {
 	goutilslog.SetLogger(&config.GoUtilsZapLogger{Logger: logger.WithOptions(zap.AddCallerSkip(2)).Named(
 		"memcached").Sugar()})
 
-	node, err := couchbase.BootstrapNode(logger.Sugar(), cfg.CouchbaseHost, cfg.CouchbaseUsername, cfg.CouchbasePassword,
-		cfg.CouchbaseManagementPort)
+	node, err := couchbase.BootstrapNode(logger.Sugar(), couchbase.BootstrapNodeOptions{
+		ConnectionString:   cfg.CouchbaseConnectionString,
+		Username:           cfg.CouchbaseUsername,
+		Password:           cfg.CouchbasePassword,
+		CACertFile:         cfg.CouchbaseCACertFile,
+		ClientCertFile:     cfg.CouchbaseClientCertFile,
+		KeyFile:            cfg.CouchbaseClientKeyFile,
+		InsecureSkipVerify: cfg.InsecureCouchbaseSkipTLSVerify,
+	})
 	if err != nil {
 		logger.Sugar().Fatalw("Failed to bootstrap cluster", "err", err)
 	}
@@ -119,14 +126,14 @@ func main() {
 	reg.MustRegister(sys)
 	logger.Info("Registered system collector")
 
-	nodeIP := net.ParseIP(cfg.CouchbaseHost)
+	nodeIP := net.ParseIP(node.Hostname())
 	if nodeIP == nil {
-		ips, err := net.LookupIP(cfg.CouchbaseHost)
+		ips, err := net.LookupIP(node.Hostname())
 		if err != nil {
-			logger.Fatal("Failed to look up the host IP", zap.String("host", cfg.CouchbaseHost), zap.Error(err))
+			logger.Fatal("Failed to look up the host IP", zap.String("host", node.Hostname()), zap.Error(err))
 		}
 		if len(ips) == 0 {
-			logger.Fatal("Found no IPs for host", zap.String("host", cfg.CouchbaseHost))
+			logger.Fatal("Found no IPs for host", zap.String("host", node.Hostname()))
 		}
 		nodeIP = ips[0]
 	}

@@ -17,12 +17,12 @@ package couchbase
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"net/http"
-	"strconv"
 
 	"github.com/couchbase/tools-common/aprov"
 	"github.com/couchbase/tools-common/cbrest"
@@ -32,11 +32,12 @@ import (
 )
 
 type Node struct {
-	hostname string
-	creds    aprov.Provider
-	rest     *cbrest.Client
-	ccm      *cbrest.ClusterConfigManager
-	logger   *zap.SugaredLogger
+	hostname  string
+	creds     aprov.Provider
+	rest      *cbrest.Client
+	ccm       *cbrest.ClusterConfigManager
+	logger    *zap.SugaredLogger
+	tlsConfig *tls.Config
 }
 
 func (n *Node) Hostname() string {
@@ -48,28 +49,77 @@ func (n *Node) Close() error {
 	return nil
 }
 
-func BootstrapNode(logger *zap.SugaredLogger, node, username, password string, mgmtPort int) (*Node, error) {
+func (n *Node) TLSConfig() *tls.Config {
+	return n.tlsConfig
+}
+
+type BootstrapNodeOptions struct {
+	ConnectionString                    string
+	Username, Password                  string
+	CACertFile, ClientCertFile, KeyFile string
+	InsecureSkipVerify                  bool
+}
+
+func BootstrapNode(logger *zap.SugaredLogger, opts BootstrapNodeOptions) (*Node, error) {
 	creds := &aprov.Static{
 		UserAgent: fmt.Sprintf("cmos-exporter/%s", meta.Version),
-		Username:  username,
-		Password:  password,
+		Username:  opts.Username,
+		Password:  opts.Password,
+	}
+	var tlsConfig *tls.Config
+	if opts.CACertFile != "" {
+		caCertData, err := ioutil.ReadFile(opts.CACertFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read CACertFile %q: %w", opts.CACertFile, err)
+		}
+		pool := x509.NewCertPool()
+		if ok := pool.AppendCertsFromPEM(caCertData); !ok {
+			return nil, fmt.Errorf("failed to parse CACertFile %q", opts.CACertFile)
+		}
+		tlsConfig = &tls.Config{
+			RootCAs: pool,
+		}
+	} else if opts.InsecureSkipVerify {
+		tlsConfig = &tls.Config{
+			InsecureSkipVerify: opts.InsecureSkipVerify,
+		}
+	} else {
+		systemPool, err := x509.SystemCertPool()
+		if err != nil {
+			return nil, fmt.Errorf("failed to load system cert pool: %w", err)
+		}
+		tlsConfig = &tls.Config{
+			RootCAs: systemPool,
+		}
+	}
+	if opts.ClientCertFile != "" && opts.KeyFile != "" {
+		cert, err := tls.LoadX509KeyPair(opts.ClientCertFile, opts.KeyFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read client certs: %w", err)
+		}
+		tlsConfig.Certificates = []tls.Certificate{cert}
 	}
 	client, err := cbrest.NewClient(cbrest.ClientOptions{
-		ConnectionString: net.JoinHostPort(node, strconv.Itoa(mgmtPort)),
+		ConnectionString: opts.ConnectionString,
 		Provider:         creds,
-		TLSConfig:        nil,
+		TLSConfig:        tlsConfig,
 		DisableCCP:       true,
 		ConnectionMode:   cbrest.ConnectionModeThisNodeOnly,
 	})
 	if err != nil {
 		return nil, err
 	}
+	nodes := client.Nodes()
+	if len(nodes) < 1 {
+		return nil, fmt.Errorf("internal error: cluster has no nodes")
+	}
 	return &Node{
-		hostname: node,
-		rest:     client,
-		creds:    creds,
-		ccm:      cbrest.NewClusterConfigManager(),
-		logger:   logger.Named(fmt.Sprintf("node[%s]", node)),
+		hostname:  nodes[0].Hostname,
+		rest:      client,
+		creds:     creds,
+		ccm:       cbrest.NewClusterConfigManager(),
+		logger:    logger.Named(fmt.Sprintf("node[%s]", nodes[0].Hostname)),
+		tlsConfig: tlsConfig,
 	}, nil
 }
 
@@ -112,7 +162,7 @@ func (n *Node) GetServicePort(service cbrest.Service) (int, error) {
 		}
 		cc = n.ccm.GetClusterConfig()
 	}
-	return int(cc.BootstrapNode().GetPort(service, false, false)), nil
+	return int(cc.BootstrapNode().GetPort(service, n.rest.TLS(), n.rest.AltAddr())), nil
 }
 
 func (n *Node) HasService(service cbrest.Service) (bool, error) {
@@ -123,5 +173,5 @@ func (n *Node) HasService(service cbrest.Service) (bool, error) {
 		}
 		cc = n.ccm.GetClusterConfig()
 	}
-	return cc.BootstrapNode().GetPort(service, false, false) > 0, nil
+	return cc.BootstrapNode().GetPort(service, n.rest.TLS(), n.rest.AltAddr()) > 0, nil
 }
