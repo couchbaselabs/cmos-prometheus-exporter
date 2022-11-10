@@ -24,7 +24,7 @@ type CBLogZapLogger struct {
 	Logger *zap.SugaredLogger
 }
 
-func (c *CBLogZapLogger) Log(level log.Level, format string, args ...interface{}) {
+func (c CBLogZapLogger) Log(level log.Level, format string, args ...interface{}) {
 	switch level {
 	case log.LevelTrace:
 		fallthrough

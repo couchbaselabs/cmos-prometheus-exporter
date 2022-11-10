@@ -25,7 +25,6 @@ import (
 
 	goutilslog "github.com/couchbase/goutils/logging"
 	"github.com/couchbase/tools-common/cbrest"
-	toolscommonlog "github.com/couchbase/tools-common/log"
 	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/meta"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -102,7 +101,6 @@ func main() {
 	// using zap.Object ensures we don't leak any sensitive fields, as the ObjectMarshaller will redact them
 	logger.Debug("Loaded configuration", zap.Object("cfg", cfg))
 
-	toolscommonlog.SetLogger(&config.CBLogZapLogger{Logger: logger.WithOptions(zap.AddCallerSkip(3)).Named("cb").Sugar()})
 	goutilslog.SetLogger(&config.GoUtilsZapLogger{Logger: logger.WithOptions(zap.AddCallerSkip(2)).Named(
 		"memcached").Sugar()})
 
