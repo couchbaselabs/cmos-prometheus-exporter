@@ -28,6 +28,7 @@ import (
 	"github.com/couchbase/tools-common/cbrest"
 	"go.uber.org/zap"
 
+	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/config"
 	"github.com/couchbaselabs/cmos-prometheus-exporter/pkg/meta"
 )
 
@@ -68,7 +69,7 @@ func BootstrapNode(logger *zap.SugaredLogger, node, username, password string, m
 		hostname: node,
 		rest:     client,
 		creds:    creds,
-		ccm:      cbrest.NewClusterConfigManager(),
+		ccm:      cbrest.NewClusterConfigManager(config.CBLogZapLogger{Logger: logger}),
 		logger:   logger.Named(fmt.Sprintf("node[%s]", node)),
 	}, nil
 }
