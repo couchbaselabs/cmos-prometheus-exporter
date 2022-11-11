@@ -3,7 +3,7 @@ module github.com/couchbaselabs/cmos-prometheus-exporter
 go 1.18
 
 require (
-	github.com/cloudfoundry/gosigar v1.3.3
+	github.com/cloudfoundry/gosigar v1.3.4
 	github.com/couchbase/gomemcached v0.1.4
 	github.com/couchbase/goutils v0.1.2
 	github.com/couchbase/tools-common v0.0.0-20221108111232-74639726fb4d
